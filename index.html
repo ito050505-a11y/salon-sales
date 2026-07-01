@@ -577,7 +577,7 @@ function SalonApp(){
               </button>
             </div>
             {(()=>{
-              const todayRec=stats.visibleRecords.filter(r=>r.date===form.date);
+              const todayRec=stats.visibleRecords.filter(r=>r.date===form.date).slice().sort((a,b)=>Number(b.id)-Number(a.id));
               if(todayRec.length===0)return null;
               return(
                 <div style={{marginTop:16}}>
