@@ -46,41 +46,30 @@ const STAFF_LIST = [
 const NAIL_MENUS = ["ハンド", "フット", "当店offのみ", "他店offのみ"];
 const HANPAI_MENUS = ["KOYO物販", "ガモウ物販", "ネイル物販", "プロテイン"];
 const PAYMENTS = ["現金", "クレジット", "QRコード決済", "スマート支払い"];
-// 来店回数ラベル（新規/再来の代わり）
 const VISIT_COUNTS = ["初回", "2回目", "3回目", "4回目以上"];
 const TODAY = new Date().toISOString().split("T")[0];
 
 const initialForm = {
-  date: TODAY,
-  staff: "",
-  nailMenus: ["ハンド"], // ← 複数選択対応で配列に
-  nailPrice: "",
-  visitCount: "初回", // ← 新規/再来の代わり
-  shimei: false,
-  payment: "現金",
+  date: TODAY, staff: "",
+  nailMenus: ["ハンド"], nailPrice: "",
+  visitCount: "初回", shimei: false, payment: "現金",
   hanpai: { "KOYO物販": "", "ガモウ物販": "", "ネイル物販": "", "プロテイン": "" },
   note: "",
 };
 
-// visitCountからisRepeat互換値を返す
 const isRepeatFromVisit = (visitCount) => visitCount !== "初回";
 
 const toRecord = (r) => ({
-  id: r.id,
-  date: r.date,
-  staff: r.staff,
+  id: r.id, date: r.date, staff: r.staff,
   nailMenu: r.nail_menu || "",
   nailMenus: r.nail_menu ? r.nail_menu.split("・") : ["ハンド"],
   nailPrice: r.nail_price || 0,
   visitCount: r.visit_count || (r.is_repeat ? "2回目以上" : "初回"),
   isRepeat: r.visit_count ? r.visit_count !== "初回" : (r.is_repeat || false),
-  shimei: r.shimei || false,
-  payment: r.payment || "現金",
+  shimei: r.shimei || false, payment: r.payment || "現金",
   hanpai: {
-    "KOYO物販": r.hanpai_koyo || 0,
-    "ガモウ物販": r.hanpai_gamo || 0,
-    "ネイル物販": r.hanpai_nail || 0,
-    "プロテイン": r.hanpai_protein || 0,
+    "KOYO物販": r.hanpai_koyo || 0, "ガモウ物販": r.hanpai_gamo || 0,
+    "ネイル物販": r.hanpai_nail || 0, "プロテイン": r.hanpai_protein || 0,
   },
   hanpaiTotal: (r.hanpai_koyo||0)+(r.hanpai_gamo||0)+(r.hanpai_nail||0)+(r.hanpai_protein||0),
   note: r.note || "",
@@ -90,25 +79,20 @@ const calcStats = (records) => {
   const result = {};
   records.forEach((r) => {
     if (!result[r.staff]) result[r.staff] = {
-      nailTotal: 0, hanpaiTotal: 0, total: 0,
-      count: 0, repeat: 0, shimei: 0,
-      visitCounts: { "初回": 0, "2回目": 0, "3回目": 0, "4回目以上": 0 },
-      menuCounts: { "ハンド": 0, "フット": 0, "当店offのみ": 0, "他店offのみ": 0 },
-      payment: { "現金": 0, "クレジット": 0, "QRコード決済": 0, "スマート支払い": 0 },
-      hanpai: { "KOYO物販": 0, "ガモウ物販": 0, "ネイル物販": 0, "プロテイン": 0 }
+      nailTotal:0, hanpaiTotal:0, total:0, count:0, repeat:0, shimei:0,
+      visitCounts:{"初回":0,"2回目":0,"3回目":0,"4回目以上":0},
+      menuCounts:{"ハンド":0,"フット":0,"当店offのみ":0,"他店offのみ":0},
+      payment:{"現金":0,"クレジット":0,"QRコード決済":0,"スマート支払い":0},
+      hanpai:{"KOYO物販":0,"ガモウ物販":0,"ネイル物販":0,"プロテイン":0}
     };
     const d = result[r.staff];
-    d.nailTotal += r.nailPrice;
-    d.hanpaiTotal += r.hanpaiTotal;
-    d.total += r.nailPrice + r.hanpaiTotal;
-    d.count += 1;
+    d.nailTotal += r.nailPrice; d.hanpaiTotal += r.hanpaiTotal;
+    d.total += r.nailPrice + r.hanpaiTotal; d.count += 1;
     if (r.isRepeat) d.repeat += 1;
     if (r.shimei) d.shimei += 1;
     if (r.payment) d.payment[r.payment] = (d.payment[r.payment] || 0) + 1;
-    // 来店回数集計
     const vc = r.visitCount || "初回";
     if (d.visitCounts[vc] !== undefined) d.visitCounts[vc] += 1;
-    // メニュー複数集計
     const menus = r.nailMenus || [r.nailMenu];
     menus.forEach(m => { if (d.menuCounts[m] !== undefined) d.menuCounts[m] += 1; });
     HANPAI_MENUS.forEach(m => { d.hanpai[m] += r.hanpai[m] || 0; });
@@ -116,131 +100,82 @@ const calcStats = (records) => {
   return result;
 };
 
-// 来店回数集計（全体）
 const calcVisitCounts = (records) => {
-  const result = { "初回": 0, "2回目": 0, "3回目": 0, "4回目以上": 0 };
-  records.forEach(r => {
-    const vc = r.visitCount || "初回";
-    if (result[vc] !== undefined) result[vc] += 1;
-  });
+  const result = {"初回":0,"2回目":0,"3回目":0,"4回目以上":0};
+  records.forEach(r => { const vc = r.visitCount||"初回"; if (result[vc]!==undefined) result[vc]+=1; });
   return result;
 };
 
-// メニュー集計（全体）
 const calcMenuCounts = (records) => {
-  const result = { "ハンド": 0, "フット": 0, "当店offのみ": 0, "他店offのみ": 0 };
-  records.forEach(r => {
-    const menus = r.nailMenus || [r.nailMenu];
-    menus.forEach(m => { if (result[m] !== undefined) result[m] += 1; });
-  });
+  const result = {"ハンド":0,"フット":0,"当店offのみ":0,"他店offのみ":0};
+  records.forEach(r => { const menus=r.nailMenus||[r.nailMenu]; menus.forEach(m=>{if(result[m]!==undefined)result[m]+=1;}); });
   return result;
 };
 
 const exportCSV = (selectedMonth, mr, byStaff, isOwner) => {
-  const nailTotal = mr.reduce((s,r)=>s+r.nailPrice,0);
-  const hanpaiTotal = mr.reduce((s,r)=>s+r.hanpaiTotal,0);
-  const total = nailTotal + hanpaiTotal;
-  const repeatRate = mr.length>0 ? Math.round((mr.filter(r=>r.isRepeat).length/mr.length)*100) : 0;
-  const shimeiRate = mr.length>0 ? Math.round((mr.filter(r=>r.shimei).length/mr.length)*100) : 0;
-  const avg = mr.length>0 ? Math.round(nailTotal/mr.length) : 0;
-  const visitCounts = calcVisitCounts(mr);
-  const menuCounts = calcMenuCounts(mr);
-  let csv = "\uFEFF";
-  csv += `月間売上レポート,${selectedMonth}\n\n`;
-  csv += `【売上サマリー】\n総売上,${total}\n施術売上,${nailTotal}\n店販売上,${hanpaiTotal}\n`;
-  csv += `客数,${mr.length}\n客単価,${avg}\n初回,${visitCounts["初回"]}\n`;
-  csv += `リピート率,${repeatRate}%\n指名率,${shimeiRate}%\n\n`;
-  csv += `【来店回数別】\n来店回数,件数,比率\n`;
-  VISIT_COUNTS.forEach(v => {
-    const cnt = visitCounts[v] || 0;
-    const pct = mr.length>0 ? Math.round((cnt/mr.length)*100) : 0;
-    csv += `${v},${cnt},${pct}%\n`;
-  });
-  csv += `\n【メニュー別】\nメニュー,件数,比率\n`;
-  NAIL_MENUS.forEach(m => {
-    const cnt = menuCounts[m] || 0;
-    const pct = mr.length>0 ? Math.round((cnt/mr.length)*100) : 0;
-    csv += `${m},${cnt},${pct}%\n`;
-  });
-  csv += `\n【決済方法別】\n決済方法,件数,比率\n`;
-  PAYMENTS.forEach(p => {
-    const cnt = mr.filter(r=>r.payment===p).length;
-    const pct = mr.length>0 ? Math.round((cnt/mr.length)*100) : 0;
-    csv += `${p},${cnt},${pct}%\n`;
-  });
-  csv += `\n【物販カテゴリ別】\nカテゴリ,売上\n`;
-  HANPAI_MENUS.forEach(m => {
-    const t = mr.reduce((s,r)=>s+(r.hanpai[m]||0),0);
-    csv += `${m},${t}\n`;
-  });
+  const nailTotal=mr.reduce((s,r)=>s+r.nailPrice,0);
+  const hanpaiTotal=mr.reduce((s,r)=>s+r.hanpaiTotal,0);
+  const total=nailTotal+hanpaiTotal;
+  const repeatRate=mr.length>0?Math.round((mr.filter(r=>r.isRepeat).length/mr.length)*100):0;
+  const shimeiRate=mr.length>0?Math.round((mr.filter(r=>r.shimei).length/mr.length)*100):0;
+  const avg=mr.length>0?Math.round(nailTotal/mr.length):0;
+  const visitCounts=calcVisitCounts(mr); const menuCounts=calcMenuCounts(mr);
+  let csv="\uFEFF";
+  csv+=`月間売上レポート,${selectedMonth}\n\n`;
+  csv+=`【売上サマリー】\n総売上,${total}\n施術売上,${nailTotal}\n店販売上,${hanpaiTotal}\n`;
+  csv+=`客数,${mr.length}\n客単価,${avg}\n初回,${visitCounts["初回"]}\n`;
+  csv+=`リピート率,${repeatRate}%\n指名率,${shimeiRate}%\n\n`;
+  csv+=`【来店回数別】\n来店回数,件数,比率\n`;
+  VISIT_COUNTS.forEach(v=>{const cnt=visitCounts[v]||0;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;csv+=`${v},${cnt},${pct}%\n`;});
+  csv+=`\n【メニュー別】\nメニュー,件数,比率\n`;
+  NAIL_MENUS.forEach(m=>{const cnt=menuCounts[m]||0;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;csv+=`${m},${cnt},${pct}%\n`;});
+  csv+=`\n【決済方法別】\n決済方法,件数,比率\n`;
+  PAYMENTS.forEach(p=>{const cnt=mr.filter(r=>r.payment===p).length;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;csv+=`${p},${cnt},${pct}%\n`;});
+  csv+=`\n【物販カテゴリ別】\nカテゴリ,売上\n`;
+  HANPAI_MENUS.forEach(m=>{const t=mr.reduce((s,r)=>s+(r.hanpai[m]||0),0);csv+=`${m},${t}\n`;});
   if (isOwner) {
-    csv += `\n【スタッフ別売上】\nスタッフ,売上,客数,客単価,リピート率\n`;
-    STAFF_LIST.forEach(s => {
-      const d = byStaff[s.name];
-      if (!d) { csv += `${s.name},0,0,0,0%\n`; return; }
-      const sAvg = d.count>0 ? Math.round(d.nailTotal/d.count) : 0;
-      const sRepeat = d.count>0 ? Math.round((d.repeat/d.count)*100) : 0;
-      csv += `${s.name},${d.total},${d.count},${sAvg},${sRepeat}%\n`;
-    });
+    csv+=`\n【スタッフ別売上】\nスタッフ,売上,客数,客単価,リピート率\n`;
+    STAFF_LIST.forEach(s=>{const d=byStaff[s.name];if(!d){csv+=`${s.name},0,0,0,0%\n`;return;}const sAvg=d.count>0?Math.round(d.nailTotal/d.count):0;const sRepeat=d.count>0?Math.round((d.repeat/d.count)*100):0;csv+=`${s.name},${d.total},${d.count},${sAvg},${sRepeat}%\n`;});
   }
-  csv += `\n【明細】\n日付,スタッフ,メニュー,施術売上,店販売上,来店回数,指名,決済方法\n`;
-  mr.forEach(r => {
-    const menus = (r.nailMenus||[r.nailMenu]).join("・");
-    csv += `${r.date},${r.staff},${menus},${r.nailPrice},${r.hanpaiTotal},${r.visitCount||"初回"},${r.shimei?"指名あり":"指名なし"},${r.payment}\n`;
-  });
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `売上レポート_${selectedMonth}.csv`; a.click();
+  csv+=`\n【明細】\n日付,スタッフ,メニュー,施術売上,店販売上,来店回数,指名,決済方法\n`;
+  mr.forEach(r=>{const menus=(r.nailMenus||[r.nailMenu]).join("・");csv+=`${r.date},${r.staff},${menus},${r.nailPrice},${r.hanpaiTotal},${r.visitCount||"初回"},${r.shimei?"指名あり":"指名なし"},${r.payment}\n`;});
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=`売上レポート_${selectedMonth}.csv`;a.click();
   URL.revokeObjectURL(url);
 };
 
-const iS = { width:"100%", padding:"10px 12px", border:"1px solid #e8ddd0", borderRadius:10, fontSize:14, background:"#fdf8f4", boxSizing:"border-box", outline:"none" };
-const cS = { padding:"8px 16px", borderRadius:20, border:"none", fontSize:13, fontWeight:600, cursor:"pointer", transition:"all 0.15s" };
-const FR = ({ label, children }) => (
-  <div style={{ marginBottom:14 }}>
-    <div style={{ fontSize:12, color:"#999", marginBottom:6 }}>{label}</div>
-    {children}
-  </div>
-);
-const EmptyState = () => <div style={{ textAlign:"center", padding:"40px 0", color:"#ccc", fontSize:14 }}>まだデータがありません</div>;
-const Bar = ({ pct, color }) => (
-  <div style={{ background:"#e8f0ed", borderRadius:4, height:6, marginTop:3 }}>
-    <div style={{ background:color, borderRadius:4, height:6, width:pct+"%" }} />
-  </div>
-);
-const DelBtn = ({ onClick }) => (
-  <button onClick={onClick} style={{ background:"#fff0f0", border:"none", borderRadius:8, padding:"4px 8px", fontSize:11, color:"#e05050", cursor:"pointer", fontWeight:600 }}>削除</button>
-);
-const StatCard = ({ label, value }) => (
-  <div style={{ background:"white", borderRadius:12, padding:"12px 14px", boxShadow:"0 1px 6px rgba(0,0,0,0.05)", textAlign:"center" }}>
-    <div style={{ fontSize:11, color:"#999", marginBottom:4 }}>{label}</div>
-    <div style={{ fontSize:18, fontWeight:700, color:"#a07850" }}>{value}</div>
-  </div>
-);
+const iS={width:"100%",padding:"10px 12px",border:"1px solid #e8ddd0",borderRadius:10,fontSize:14,background:"#fdf8f4",boxSizing:"border-box",outline:"none"};
+const cS={padding:"8px 16px",borderRadius:20,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",transition:"all 0.15s"};
+const FR=({label,children})=>(<div style={{marginBottom:14}}><div style={{fontSize:12,color:"#999",marginBottom:6}}>{label}</div>{children}</div>);
+const EmptyState=()=><div style={{textAlign:"center",padding:"40px 0",color:"#ccc",fontSize:14}}>まだデータがありません</div>;
+const Bar=({pct,color})=>(<div style={{background:"#e8f0ed",borderRadius:4,height:6,marginTop:3}}><div style={{background:color,borderRadius:4,height:6,width:pct+"%"}}/></div>);
+const DelBtn=({onClick})=>(<button onClick={onClick} style={{background:"#fff0f0",border:"none",borderRadius:8,padding:"4px 8px",fontSize:11,color:"#e05050",cursor:"pointer",fontWeight:600}}>削除</button>);
+const StatCard=({label,value})=>(<div style={{background:"white",borderRadius:12,padding:"12px 14px",boxShadow:"0 1px 6px rgba(0,0,0,0.05)",textAlign:"center"}}><div style={{fontSize:11,color:"#999",marginBottom:4}}>{label}</div><div style={{fontSize:18,fontWeight:700,color:"#a07850"}}>{value}</div></div>);
 
-function LoginScreen({ onLogin }) {
-  const [selectedId, setSelectedId] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const handleLogin = () => {
-    const user = STAFF_LIST.find(s => s.id === selectedId);
-    if (!user) { setError("スタッフを選択してください"); return; }
-    if (user.password !== password) { setError("パスワードが違います"); return; }
+function LoginScreen({onLogin}){
+  const [selectedId,setSelectedId]=useState("");
+  const [password,setPassword]=useState("");
+  const [error,setError]=useState("");
+  const handleLogin=()=>{
+    const user=STAFF_LIST.find(s=>s.id===selectedId);
+    if(!user){setError("スタッフを選択してください");return;}
+    if(user.password!==password){setError("パスワードが違います");return;}
     onLogin(user);
   };
-  return (
-    <div style={{ fontFamily:"sans-serif", background:"#fdf8f4", minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
-      <div style={{ background:"white", borderRadius:20, padding:28, width:"100%", maxWidth:360, boxShadow:"0 4px 24px rgba(0,0,0,0.08)" }}>
-        <div style={{ textAlign:"center", marginBottom:28 }}>
-          <div style={{ fontSize:11, letterSpacing:3, color:"#a07850", marginBottom:6 }}>燈乃工房・本店</div>
-          <div style={{ fontSize:22, fontWeight:700, color:"#2d2016" }}>売上管理</div>
+  return(
+    <div style={{fontFamily:"sans-serif",background:"#fdf8f4",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{background:"white",borderRadius:20,padding:28,width:"100%",maxWidth:360,boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{fontSize:11,letterSpacing:3,color:"#a07850",marginBottom:6}}>燈乃工房・本店</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#2d2016"}}>売上管理</div>
         </div>
         <FR label="スタッフを選択">
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {STAFF_LIST.map(s => (
-              <button key={s.id} onClick={() => { setSelectedId(s.id); setPassword(""); setError(""); }}
-                style={{ ...cS, padding:"12px 16px", background:selectedId===s.id?"#a07850":"#f0e8de", color:selectedId===s.id?"white":"#a07850", textAlign:"left", borderRadius:12 }}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {STAFF_LIST.map(s=>(
+              <button key={s.id} onClick={()=>{setSelectedId(s.id);setPassword("");setError("");}}
+                style={{...cS,padding:"12px 16px",background:selectedId===s.id?"#a07850":"#f0e8de",color:selectedId===s.id?"white":"#a07850",textAlign:"left",borderRadius:12}}>
                 {s.name} {s.role==="owner"&&"👑"}
               </button>
             ))}
@@ -248,12 +183,12 @@ function LoginScreen({ onLogin }) {
         </FR>
         <FR label="パスワード">
           <input type="password" placeholder="パスワードを入力" value={password}
-            onChange={e=>{ setPassword(e.target.value); setError(""); }}
-            onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={iS} />
+            onChange={e=>{setPassword(e.target.value);setError("");}}
+            onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={iS}/>
         </FR>
-        {error && <div style={{ color:"#e05050", fontSize:13, marginBottom:12, textAlign:"center" }}>{error}</div>}
+        {error&&<div style={{color:"#e05050",fontSize:13,marginBottom:12,textAlign:"center"}}>{error}</div>}
         <button onClick={handleLogin}
-          style={{ width:"100%", padding:14, background:"linear-gradient(135deg,#c8a882,#a07850)", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor:"pointer" }}>
+          style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c8a882,#a07850)",color:"white",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer"}}>
           ログイン
         </button>
       </div>
@@ -261,281 +196,408 @@ function LoginScreen({ onLogin }) {
   );
 }
 
-function SalonApp() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState(initialForm);
-  const [view, setView] = useState("input");
-  const [selectedMonth, setSelectedMonth] = useState(() => new Date().toISOString().slice(0,7));
-  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
-  const [toast, setToast] = useState("");
-  const [expandedStaff, setExpandedStaff] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+// ★ スタッフ用 個人年間ビュー
+function StaffAnnualView({records, currentUser}){
+  const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
+  const myRecords = records.filter(r=>r.staff===currentUser.name);
+  const years = ["2024","2025","2026"];
 
-  const isOwner = currentUser?.role === "owner";
-  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),2500); };
-
-  const loadRecords = async () => {
-    setLoading(true);
-    try {
-      const data = await sb("records?order=date.desc", { method:"GET" });
-      setRecords(data.map(toRecord));
-    } catch(e) { showToast("データ読み込みエラー"); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { if (currentUser) loadRecords(); }, [currentUser]);
-
-  const handleDelete = (id) => { setDeleteTarget(id); };
-  const confirmDelete = async () => {
-    try {
-      await sb(`records?id=eq.${deleteTarget}`, { method:"DELETE" });
-      setRecords(prev => prev.filter(p=>p.id!==deleteTarget));
-      setDeleteTarget(null);
-      showToast("削除しました");
-    } catch(e) { showToast("削除に失敗しました"); }
-  };
-
-  // メニュー複数選択トグル
-  const toggleMenu = (menu) => {
-    const current = form.nailMenus || [];
-    if (current.includes(menu)) {
-      if (current.length === 1) return; // 最低1つは必須
-      setForm({...form, nailMenus: current.filter(m=>m!==menu)});
-    } else {
-      setForm({...form, nailMenus: [...current, menu]});
+  // 月ごとの集計
+  const monthlyData = useMemo(()=>{
+    const result = {};
+    for(let m=1;m<=12;m++){
+      const key=`${selectedYear}-${String(m).padStart(2,"0")}`;
+      const mr=myRecords.filter(r=>r.date.startsWith(key));
+      const nailTotal=mr.reduce((s,r)=>s+r.nailPrice,0);
+      const hanpaiTotal=mr.reduce((s,r)=>s+r.hanpaiTotal,0);
+      const total=nailTotal+hanpaiTotal;
+      const count=mr.length;
+      const repeat=mr.filter(r=>r.isRepeat).length;
+      const shimei=mr.filter(r=>r.shimei).length;
+      result[m]={total,nailTotal,hanpaiTotal,count,repeat,shimei,mr};
     }
-  };
+    return result;
+  },[myRecords,selectedYear]);
 
-  const handleSubmit = async () => {
-    if (!form.nailPrice) { showToast("施術金額を入力してください"); return; }
-    const staffName = isOwner ? form.staff : currentUser.name;
-    if (!staffName) { showToast("スタッフを選択してください"); return; }
-    const hanpaiParsed = {};
-    HANPAI_MENUS.forEach(m => { hanpaiParsed[m] = Number(form.hanpai[m]) || 0; });
-    const hanpaiTotal = Object.values(hanpaiParsed).reduce((a,b)=>a+b,0);
-    const menusStr = (form.nailMenus || ["ハンド"]).join("・");
-    const payload = {
-      date: form.date,
-      staff: staffName,
-      nail_menu: menusStr,
-      nail_price: Number(form.nailPrice),
-      is_repeat: isRepeatFromVisit(form.visitCount),
-      visit_count: form.visitCount,
-      shimei: form.shimei,
-      payment: form.payment,
-      hanpai_koyo: hanpaiParsed["KOYO物販"],
-      hanpai_gamo: hanpaiParsed["ガモウ物販"],
-      hanpai_nail: hanpaiParsed["ネイル物販"],
-      hanpai_protein: hanpaiParsed["プロテイン"],
-      hanpai_total: hanpaiTotal,
-      note: form.note,
-    };
-    try {
-      const [saved] = await sb("records", { method:"POST", body:JSON.stringify(payload) });
-      setRecords(prev=>[toRecord(saved),...prev]);
-      setForm({...initialForm, date:form.date, staff:isOwner?form.staff:currentUser.name});
-      showToast("登録しました！");
-    } catch(e) { showToast("登録に失敗しました"); }
-  };
+  const yearTotal=Object.values(monthlyData).reduce((s,d)=>s+d.total,0);
+  const yearCount=Object.values(monthlyData).reduce((s,d)=>s+d.count,0);
+  const yearRepeat=Object.values(monthlyData).reduce((s,d)=>s+d.repeat,0);
+  const yearShimei=Object.values(monthlyData).reduce((s,d)=>s+d.shimei,0);
+  const yearAvg=yearCount>0?Math.round(yearTotal/yearCount):0;
+  const yearRepeatRate=yearCount>0?Math.round(yearRepeat/yearCount*100):0;
+  const yearShimeiRate=yearCount>0?Math.round(yearShimei/yearCount*100):0;
 
-  const canEdit = (r) => {
-    if (isOwner) return true;
-    if (r.staff !== currentUser.name) return false;
-    return r.date === TODAY;
-  };
+  const maxMonthTotal=Math.max(1,...Object.values(monthlyData).map(d=>d.total));
+  const [expandedMonth,setExpandedMonth]=useState(null);
 
-  const stats = useMemo(() => {
-    const visibleRecords = isOwner ? records : records.filter(r=>r.staff===currentUser?.name);
-    const byDay={}, byMonth={}, byYear={};
-    records.forEach((r) => {
-      const total = r.nailPrice + r.hanpaiTotal;
-      byDay[r.date] = (byDay[r.date]||0) + total;
-      byMonth[r.date.slice(0,7)] = (byMonth[r.date.slice(0,7)]||0) + total;
-      byYear[r.date.slice(0,4)] = (byYear[r.date.slice(0,4)]||0) + total;
-    });
-    const monthRecords = visibleRecords.filter(r=>r.date.startsWith(selectedMonth));
-    const allMonthRecords = records.filter(r=>r.date.startsWith(selectedMonth));
-    const yearRecords = visibleRecords.filter(r=>r.date.startsWith(selectedYear));
-    return { byDay, byMonth, byYear, byStaff:calcStats(records), monthRecords, allMonthRecords, yearRecords, visibleRecords };
-  }, [records, selectedMonth, selectedYear, currentUser, isOwner]);
+  return(
+    <div>
+      {/* 年選択 */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {years.map(y=>(
+          <button key={y} onClick={()=>setSelectedYear(y)}
+            style={{...cS,background:selectedYear===y?"#a07850":"#f0e8de",color:selectedYear===y?"white":"#a07850"}}>
+            {y}年
+          </button>
+        ))}
+      </div>
 
-  if (!currentUser) return <LoginScreen onLogin={(user)=>{ setCurrentUser(user); setForm({...initialForm, staff:user.role==="staff"?user.name:""}); }} />;
-
-  const STAFF_NAMES = STAFF_LIST.map(s=>s.name);
-  const tabs = isOwner
-    ? [{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"}]
-    : [{key:"input",label:"入力"},{key:"monthly",label:"月別"}];
-
-  return (
-    <div style={{ fontFamily:"sans-serif", background:"#fdf8f4", minHeight:"100vh", color:"#2d2016", overflowX:"hidden", width:"100%", maxWidth:"100vw", boxSizing:"border-box" }}>
-
-      <div style={{ background:"linear-gradient(135deg,#c8a882,#a07850)", padding:"16px 16px 12px", color:"white", display:"flex", justifyContent:"space-between", alignItems:"flex-end" }}>
-        <div>
-          <div style={{ fontSize:11, letterSpacing:3, opacity:0.8, marginBottom:2 }}>燈乃工房・本店</div>
-          <div style={{ fontSize:20, fontWeight:700 }}>売上管理</div>
+      {/* 年間ヒーロー */}
+      <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",borderRadius:20,padding:20,color:"white",marginBottom:16,boxShadow:"0 4px 20px rgba(160,120,80,0.3)"}}>
+        <div style={{fontSize:11,opacity:0.75,marginBottom:4}}>{selectedYear}年 個人年間売上</div>
+        <div style={{fontSize:32,fontWeight:700,marginBottom:12}}>¥{yearTotal.toLocaleString()}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {[
+            {label:"客数",value:yearCount+"名"},
+            {label:"客単価",value:"¥"+yearAvg.toLocaleString()},
+            {label:"リピート率",value:yearRepeatRate+"%"},
+            {label:"指名率",value:yearShimeiRate+"%"},
+            {label:"初回",value:(yearCount-yearRepeat)+"名"},
+            {label:"リピート",value:yearRepeat+"名"},
+          ].map(({label,value})=>(
+            <div key={label} style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"8px",textAlign:"center"}}>
+              <div style={{fontSize:10,opacity:0.75,marginBottom:3}}>{label}</div>
+              <div style={{fontWeight:700,fontSize:14}}>{value}</div>
+            </div>
+          ))}
         </div>
-        <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:12, opacity:0.9 }}>{currentUser.name} {isOwner?"👑":""}</div>
-          <button onClick={()=>{ setCurrentUser(null); setRecords([]); setView("input"); }}
-            style={{ background:"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:11, padding:"4px 10px", borderRadius:8, cursor:"pointer", marginTop:4 }}>
+      </div>
+
+      {/* 月別バーグラフ */}
+      <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📊 月別売上グラフ</div>
+        <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100,marginBottom:8}}>
+          {Array.from({length:12},(_,i)=>{
+            const m=i+1;
+            const d=monthlyData[m];
+            const h=d.total>0?Math.round(d.total/maxMonthTotal*85):2;
+            const isNow=(selectedYear===String(new Date().getFullYear())&&m===new Date().getMonth()+1);
+            return(
+              <div key={m} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                <div style={{width:"100%",height:h,background:isNow?"#a07850":"#e8d5bc",borderRadius:"3px 3px 0 0",minHeight:2}}/>
+                <div style={{fontSize:9,color:isNow?"#a07850":"#bbb",fontWeight:isNow?700:400}}>{m}月</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 月別リスト */}
+      <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📋 月別詳細</div>
+        {Array.from({length:12},(_,i)=>{
+          const m=12-i;
+          const d=monthlyData[m];
+          if(d.total===0&&d.count===0) return null;
+          const avg=d.count>0?Math.round(d.nailTotal/d.count):0;
+          const rr=d.count>0?Math.round(d.repeat/d.count*100):0;
+          const sr=d.count>0?Math.round(d.shimei/d.count*100):0;
+          const isNow=(selectedYear===String(new Date().getFullYear())&&m===new Date().getMonth()+1);
+          const isExp=expandedMonth===m;
+          const visitCounts=calcVisitCounts(d.mr);
+          return(
+            <div key={m} style={{borderRadius:12,marginBottom:8,border:isNow?"2px solid #a07850":"1px solid #f0e8de",overflow:"hidden"}}>
+              <div onClick={()=>setExpandedMonth(isExp?null:m)}
+                style={{padding:"12px 14px",cursor:"pointer",background:isNow?"#fdf8f4":"white"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div style={{fontSize:14,fontWeight:700,color:isNow?"#a07850":"#2d2016"}}>
+                    {m}月{isNow?" 🟤":""}
+                  </div>
+                  <div style={{fontSize:18,fontWeight:700,color:"#a07850"}}>¥{d.total.toLocaleString()}</div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                  {[
+                    {label:"客数",value:d.count+"名"},
+                    {label:"客単価",value:"¥"+avg.toLocaleString()},
+                    {label:"リピート率",value:rr+"%"},
+                    {label:"初回",value:(d.count-d.repeat)+"名"},
+                    {label:"指名率",value:sr+"%"},
+                    {label:"店販",value:"¥"+d.hanpaiTotal.toLocaleString()},
+                  ].map(({label,value})=>(
+                    <div key={label} style={{background:"#fdf8f4",borderRadius:8,padding:"6px",textAlign:"center"}}>
+                      <div style={{fontSize:10,color:"#999",marginBottom:2}}>{label}</div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#a07850"}}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{fontSize:11,color:"#a07850",marginTop:8,fontWeight:600}}>{isExp?"▲ 閉じる":"▼ 詳細を見る"}</div>
+              </div>
+              {isExp&&(
+                <div style={{padding:"0 14px 14px",background:"white"}}>
+                  {/* 来店回数内訳 */}
+                  <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px",marginBottom:8}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>🔁 来店回数内訳</div>
+                    {VISIT_COUNTS.map(v=>{
+                      const cnt=visitCounts[v]||0;
+                      const pct=d.count>0?Math.round(cnt/d.count*100):0;
+                      return(<div key={v} style={{marginBottom:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:12}}>
+                          <span style={{color:"#888"}}>{v}</span>
+                          <span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span>
+                        </div>
+                        <Bar pct={pct} color="#a07850"/>
+                      </div>);
+                    })}
+                  </div>
+                  {/* 記録一覧 */}
+                  <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px"}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>記録一覧</div>
+                    {d.mr.sort((a,b)=>b.date.localeCompare(a.date)).map(r=>(
+                      <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,paddingBottom:8,borderBottom:"1px solid #ede8e0"}}>
+                        <div>
+                          <div style={{fontSize:13,fontWeight:600}}>{(r.nailMenus||[r.nailMenu]).join("・")}</div>
+                          <div style={{fontSize:11,color:"#999"}}>{r.date} · {r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"}</div>
+                        </div>
+                        <span style={{fontSize:13,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
+                      </div>
+                    ))}
+                    {d.mr.length===0&&<div style={{textAlign:"center",color:"#ccc",fontSize:13}}>記録なし</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }).filter(Boolean)}
+        {yearTotal===0&&<EmptyState/>}
+      </div>
+    </div>
+  );
+}
+
+function SalonApp(){
+  const [currentUser,setCurrentUser]=useState(null);
+  const [records,setRecords]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [form,setForm]=useState(initialForm);
+  const [view,setView]=useState("input");
+  const [selectedMonth,setSelectedMonth]=useState(()=>new Date().toISOString().slice(0,7));
+  const [selectedYear,setSelectedYear]=useState(()=>String(new Date().getFullYear()));
+  const [toast,setToast]=useState("");
+  const [expandedStaff,setExpandedStaff]=useState(null);
+  const [deleteTarget,setDeleteTarget]=useState(null);
+
+  const isOwner=currentUser?.role==="owner";
+  const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),2500);};
+
+  const loadRecords=async()=>{
+    setLoading(true);
+    try{const data=await sb("records?order=date.desc",{method:"GET"});setRecords(data.map(toRecord));}
+    catch(e){showToast("データ読み込みエラー");}
+    finally{setLoading(false);}
+  };
+
+  useEffect(()=>{if(currentUser)loadRecords();},[currentUser]);
+
+  const handleDelete=(id)=>{setDeleteTarget(id);};
+  const confirmDelete=async()=>{
+    try{
+      await sb(`records?id=eq.${deleteTarget}`,{method:"DELETE"});
+      setRecords(prev=>prev.filter(p=>p.id!==deleteTarget));
+      setDeleteTarget(null);showToast("削除しました");
+    }catch(e){showToast("削除に失敗しました");}
+  };
+
+  const toggleMenu=(menu)=>{
+    const current=form.nailMenus||[];
+    if(current.includes(menu)){if(current.length===1)return;setForm({...form,nailMenus:current.filter(m=>m!==menu)});}
+    else{setForm({...form,nailMenus:[...current,menu]});}
+  };
+
+  const handleSubmit=async()=>{
+    if(!form.nailPrice){showToast("施術金額を入力してください");return;}
+    const staffName=isOwner?form.staff:currentUser.name;
+    if(!staffName){showToast("スタッフを選択してください");return;}
+    const hanpaiParsed={};
+    HANPAI_MENUS.forEach(m=>{hanpaiParsed[m]=Number(form.hanpai[m])||0;});
+    const hanpaiTotal=Object.values(hanpaiParsed).reduce((a,b)=>a+b,0);
+    const menusStr=(form.nailMenus||["ハンド"]).join("・");
+    const payload={
+      date:form.date,staff:staffName,nail_menu:menusStr,nail_price:Number(form.nailPrice),
+      is_repeat:isRepeatFromVisit(form.visitCount),visit_count:form.visitCount,shimei:form.shimei,
+      payment:form.payment,hanpai_koyo:hanpaiParsed["KOYO物販"],hanpai_gamo:hanpaiParsed["ガモウ物販"],
+      hanpai_nail:hanpaiParsed["ネイル物販"],hanpai_protein:hanpaiParsed["プロテイン"],
+      hanpai_total:hanpaiTotal,note:form.note,
+    };
+    try{
+      const [saved]=await sb("records",{method:"POST",body:JSON.stringify(payload)});
+      setRecords(prev=>[toRecord(saved),...prev]);
+      setForm({...initialForm,date:form.date,staff:isOwner?form.staff:currentUser.name});
+      showToast("登録しました！");
+    }catch(e){showToast("登録に失敗しました");}
+  };
+
+  const canEdit=(r)=>{
+    if(isOwner)return true;
+    if(r.staff!==currentUser.name)return false;
+    return r.date===TODAY;
+  };
+
+  const stats=useMemo(()=>{
+    const visibleRecords=isOwner?records:records.filter(r=>r.staff===currentUser?.name);
+    const byDay={},byMonth={},byYear={};
+    records.forEach((r)=>{
+      const total=r.nailPrice+r.hanpaiTotal;
+      byDay[r.date]=(byDay[r.date]||0)+total;
+      byMonth[r.date.slice(0,7)]=(byMonth[r.date.slice(0,7)]||0)+total;
+      byYear[r.date.slice(0,4)]=(byYear[r.date.slice(0,4)]||0)+total;
+    });
+    const monthRecords=visibleRecords.filter(r=>r.date.startsWith(selectedMonth));
+    const allMonthRecords=records.filter(r=>r.date.startsWith(selectedMonth));
+    const yearRecords=visibleRecords.filter(r=>r.date.startsWith(selectedYear));
+    return{byDay,byMonth,byYear,byStaff:calcStats(records),monthRecords,allMonthRecords,yearRecords,visibleRecords};
+  },[records,selectedMonth,selectedYear,currentUser,isOwner]);
+
+  if(!currentUser)return<LoginScreen onLogin={(user)=>{setCurrentUser(user);setForm({...initialForm,staff:user.role==="staff"?user.name:""});}}/>;
+
+  const STAFF_NAMES=STAFF_LIST.map(s=>s.name);
+  // ★ スタッフに「年間」タブを追加
+  const tabs=isOwner
+    ?[{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"}]
+    :[{key:"input",label:"入力"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"}];
+
+  return(
+    <div style={{fontFamily:"sans-serif",background:"#fdf8f4",minHeight:"100vh",color:"#2d2016",overflowX:"hidden",width:"100%",maxWidth:"100vw",boxSizing:"border-box"}}>
+      <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",padding:"16px 16px 12px",color:"white",display:"flex",justifyContent:"space-between",alignItems:"flex-end"}}>
+        <div>
+          <div style={{fontSize:11,letterSpacing:3,opacity:0.8,marginBottom:2}}>燈乃工房・本店</div>
+          <div style={{fontSize:20,fontWeight:700}}>売上管理</div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{fontSize:12,opacity:0.9}}>{currentUser.name} {isOwner?"👑":""}</div>
+          <button onClick={()=>{setCurrentUser(null);setRecords([]);setView("input");}}
+            style={{background:"rgba(255,255,255,0.2)",border:"none",color:"white",fontSize:11,padding:"4px 10px",borderRadius:8,cursor:"pointer",marginTop:4}}>
             ログアウト
           </button>
         </div>
       </div>
 
-      <div style={{ display:"flex", background:"white", borderBottom:"1px solid #e8ddd0", overflowX:"auto" }}>
+      <div style={{display:"flex",background:"white",borderBottom:"1px solid #e8ddd0",overflowX:"auto"}}>
         {tabs.map(tab=>(
           <button key={tab.key} onClick={()=>setView(tab.key)}
-            style={{ flex:1, minWidth:60, padding:"12px 8px", border:"none", background:"none", fontSize:13,
-              fontWeight:view===tab.key?700:400, color:view===tab.key?"#a07850":"#888",
-              borderBottom:view===tab.key?"2px solid #a07850":"2px solid transparent", cursor:"pointer", whiteSpace:"nowrap" }}>
+            style={{flex:1,minWidth:60,padding:"12px 8px",border:"none",background:"none",fontSize:13,
+              fontWeight:view===tab.key?700:400,color:view===tab.key?"#a07850":"#888",
+              borderBottom:view===tab.key?"2px solid #a07850":"2px solid transparent",cursor:"pointer",whiteSpace:"nowrap"}}>
             {tab.label}
           </button>
         ))}
       </div>
 
-      {loading && <div style={{ textAlign:"center", padding:20, color:"#a07850", fontSize:13 }}>読み込み中...</div>}
+      {loading&&<div style={{textAlign:"center",padding:20,color:"#a07850",fontSize:13}}>読み込み中...</div>}
 
-      <div style={{ padding:"16px", maxWidth:480, margin:"0 auto" }}>
+      <div style={{padding:"16px",maxWidth:480,margin:"0 auto"}}>
 
         {/* 入力 */}
-        {view==="input" && (
+        {view==="input"&&(
           <div>
-            <div style={{ background:"white", borderRadius:16, padding:20, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
-              <div style={{ fontSize:15, fontWeight:700, marginBottom:16, color:"#a07850" }}>新規登録</div>
-
+            <div style={{background:"white",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+              <div style={{fontSize:15,fontWeight:700,marginBottom:16,color:"#a07850"}}>新規登録</div>
               <FR label="日付">
-                <div style={{ border:"1px solid #e8ddd0", borderRadius:10, background:"#fdf8f4", overflow:"hidden", display:"flex", alignItems:"center" }}>
-                  <input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})}
-                    style={{ flex:1, padding:"10px 12px", border:"none", background:"transparent", fontSize:14, outline:"none", minWidth:0 }} />
+                <div style={{border:"1px solid #e8ddd0",borderRadius:10,background:"#fdf8f4",overflow:"hidden",display:"flex",alignItems:"center"}}>
+                  <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}
+                    style={{flex:1,padding:"10px 12px",border:"none",background:"transparent",fontSize:14,outline:"none",minWidth:0}}/>
                 </div>
               </FR>
-
-              {isOwner ? (
+              {isOwner?(
                 <FR label="担当スタッフ">
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                     {STAFF_NAMES.map(s=>(
-                      <button key={s} onClick={()=>setForm({...form, staff:s})}
-                        style={{...cS, background:form.staff===s?"#a07850":"#f0e8de", color:form.staff===s?"white":"#a07850"}}>{s}</button>
+                      <button key={s} onClick={()=>setForm({...form,staff:s})}
+                        style={{...cS,background:form.staff===s?"#a07850":"#f0e8de",color:form.staff===s?"white":"#a07850"}}>{s}</button>
                     ))}
                   </div>
                 </FR>
-              ) : (
-                <div style={{ background:"#f0e8de", borderRadius:10, padding:"10px 14px", marginBottom:14, fontSize:14, fontWeight:600, color:"#a07850" }}>
+              ):(
+                <div style={{background:"#f0e8de",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:14,fontWeight:600,color:"#a07850"}}>
                   担当：{currentUser.name}
                 </div>
               )}
-
-              <div style={{ background:"#fdf0e8", borderRadius:12, padding:14, marginBottom:16 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:"#a07850", marginBottom:12 }}>💅 施術</div>
-
-                {/* メニュー複数選択 */}
+              <div style={{background:"#fdf0e8",borderRadius:12,padding:14,marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#a07850",marginBottom:12}}>💅 施術</div>
                 <FR label="メニュー（複数選択OK）">
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                     {NAIL_MENUS.map(m=>{
-                      const selected = (form.nailMenus||[]).includes(m);
-                      return (
+                      const selected=(form.nailMenus||[]).includes(m);
+                      return(
                         <button key={m} onClick={()=>toggleMenu(m)}
-                          style={{...cS,
-                            background: selected?"#a07850":"#f0e8de",
-                            color: selected?"white":"#a07850",
-                            border: selected?"2px solid #a07850":"2px solid transparent",
-                            position:"relative"
-                          }}>
+                          style={{...cS,background:selected?"#a07850":"#f0e8de",color:selected?"white":"#a07850",
+                            border:selected?"2px solid #a07850":"2px solid transparent",position:"relative"}}>
                           {m}
-                          {selected && <span style={{ position:"absolute", top:-4, right:-4, background:"white", color:"#a07850", borderRadius:"50%", width:14, height:14, fontSize:9, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:900, border:"1px solid #a07850" }}>✓</span>}
+                          {selected&&<span style={{position:"absolute",top:-4,right:-4,background:"white",color:"#a07850",borderRadius:"50%",width:14,height:14,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,border:"1px solid #a07850"}}>✓</span>}
                         </button>
                       );
                     })}
                   </div>
-                  {(form.nailMenus||[]).length>1 && (
-                    <div style={{ marginTop:6, fontSize:11, color:"#a07850", fontWeight:600 }}>
+                  {(form.nailMenus||[]).length>1&&(
+                    <div style={{marginTop:6,fontSize:11,color:"#a07850",fontWeight:600}}>
                       選択中：{(form.nailMenus||[]).join(" ＋ ")}
                     </div>
                   )}
                 </FR>
-
                 <FR label="施術金額（円）">
-                  <input type="number" placeholder="例：8000" value={form.nailPrice} onChange={e=>setForm({...form, nailPrice:e.target.value})} style={iS} />
+                  <input type="number" placeholder="例：8000" value={form.nailPrice} onChange={e=>setForm({...form,nailPrice:e.target.value})} style={iS}/>
                 </FR>
-
-                {/* 来店回数（新規/再来の代わり）*/}
                 <FR label="来店回数">
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                     {VISIT_COUNTS.map(v=>(
-                      <button key={v} onClick={()=>setForm({...form, visitCount:v})}
-                        style={{...cS,
-                          background: form.visitCount===v?"#a07850":"#f0e8de",
-                          color: form.visitCount===v?"white":"#a07850",
-                          fontSize:12
-                        }}>{v}</button>
+                      <button key={v} onClick={()=>setForm({...form,visitCount:v})}
+                        style={{...cS,background:form.visitCount===v?"#a07850":"#f0e8de",color:form.visitCount===v?"white":"#a07850",fontSize:12}}>{v}</button>
                     ))}
                   </div>
                 </FR>
-
                 <FR label="指名">
-                  <div style={{ display:"flex", gap:8 }}>
+                  <div style={{display:"flex",gap:8}}>
                     {["指名なし","指名あり"].map((l,i)=>(
-                      <button key={l} onClick={()=>setForm({...form, shimei:i===1})}
-                        style={{...cS, background:form.shimei===(i===1)?"#7a5c8a":"#efe8f5", color:form.shimei===(i===1)?"white":"#7a5c8a"}}>{l}</button>
+                      <button key={l} onClick={()=>setForm({...form,shimei:i===1})}
+                        style={{...cS,background:form.shimei===(i===1)?"#7a5c8a":"#efe8f5",color:form.shimei===(i===1)?"white":"#7a5c8a"}}>{l}</button>
                     ))}
                   </div>
                 </FR>
               </div>
-
-              <div style={{ background:"#fef4ec", borderRadius:12, padding:14, marginBottom:16 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:"#c87840", marginBottom:12 }}>🛍 物販</div>
+              <div style={{background:"#fef4ec",borderRadius:12,padding:14,marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#c87840",marginBottom:12}}>🛍 物販</div>
                 {HANPAI_MENUS.map(m=>(
                   <FR key={m} label={m}>
                     <input type="number" placeholder="0" value={form.hanpai[m]}
-                      onChange={e=>setForm({...form, hanpai:{...form.hanpai,[m]:e.target.value}})} style={iS} />
+                      onChange={e=>setForm({...form,hanpai:{...form.hanpai,[m]:e.target.value}})} style={iS}/>
                   </FR>
                 ))}
               </div>
-
-              <FR label="メモ">
-                <input placeholder="任意" value={form.note} onChange={e=>setForm({...form, note:e.target.value})} style={iS} />
-              </FR>
-
+              <FR label="メモ"><input placeholder="任意" value={form.note} onChange={e=>setForm({...form,note:e.target.value})} style={iS}/></FR>
               <FR label="決済方法">
-                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
                   {PAYMENTS.map(p=>(
-                    <button key={p} onClick={()=>setForm({...form, payment:p})}
-                      style={{...cS, background:form.payment===p?"#4a7a6a":"#e8f0ed", color:form.payment===p?"white":"#4a7a6a", fontSize:12}}>{p}</button>
+                    <button key={p} onClick={()=>setForm({...form,payment:p})}
+                      style={{...cS,background:form.payment===p?"#4a7a6a":"#e8f0ed",color:form.payment===p?"white":"#4a7a6a",fontSize:12}}>{p}</button>
                   ))}
                 </div>
               </FR>
-
               <button onClick={handleSubmit}
-                style={{ width:"100%", padding:14, background:"linear-gradient(135deg,#c8a882,#a07850)", color:"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, cursor:"pointer" }}>
+                style={{width:"100%",padding:14,background:"linear-gradient(135deg,#c8a882,#a07850)",color:"white",border:"none",borderRadius:12,fontSize:15,fontWeight:700,cursor:"pointer"}}>
                 登録する
               </button>
             </div>
-
             {(()=>{
-              const todayRec = stats.visibleRecords.filter(r=>r.date===form.date);
-              if (todayRec.length===0) return null;
-              return (
-                <div style={{ marginTop:16 }}>
-                  <div style={{ fontSize:13, color:"#999", marginBottom:8 }}>本日の記録</div>
+              const todayRec=stats.visibleRecords.filter(r=>r.date===form.date);
+              if(todayRec.length===0)return null;
+              return(
+                <div style={{marginTop:16}}>
+                  <div style={{fontSize:13,color:"#999",marginBottom:8}}>本日の記録</div>
                   {todayRec.map(r=>(
-                    <div key={r.id} style={{ background:"white", borderRadius:12, padding:"12px 16px", marginBottom:8, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                        <div style={{ fontSize:14, fontWeight:600 }}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize:15, fontWeight:700, color:"#a07850" }}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
-                          {canEdit(r) && <DelBtn onClick={()=>handleDelete(r.id)} />}
+                    <div key={r.id} style={{background:"white",borderRadius:12,padding:"12px 16px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                        <div style={{fontSize:14,fontWeight:600}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:15,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
+                          {canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}
                         </div>
                       </div>
-                      <div style={{ fontSize:12, color:"#999" }}>
+                      <div style={{fontSize:12,color:"#999"}}>
                         施術¥{r.nailPrice.toLocaleString()} · {r.visitCount||"初回"} · {r.shimei?"👆 指名あり":"指名なし"} · {r.payment}
                         {r.hanpaiTotal>0&&" · 店販¥"+r.hanpaiTotal.toLocaleString()}
                       </div>
                     </div>
                   ))}
-                  <div style={{ textAlign:"right", fontSize:14, fontWeight:700, color:"#a07850", marginTop:4 }}>
+                  <div style={{textAlign:"right",fontSize:14,fontWeight:700,color:"#a07850",marginTop:4}}>
                     合計 ¥{todayRec.reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0).toLocaleString()}
                   </div>
                 </div>
@@ -544,119 +606,79 @@ function SalonApp() {
           </div>
         )}
 
-        {/* 日別 */}
-        {view==="daily" && isOwner && (
+        {/* ★ スタッフ用 個人年間タブ */}
+        {view==="staff_annual"&&!isOwner&&(
+          <StaffAnnualView records={records} currentUser={currentUser}/>
+        )}
+
+        {/* 日別（オーナーのみ） */}
+        {view==="daily"&&isOwner&&(
           <div>
-            <div style={{ fontSize:13, color:"#999", marginBottom:12 }}>日別売上</div>
+            <div style={{fontSize:13,color:"#999",marginBottom:12}}>日別売上</div>
             {Object.entries(stats.byDay).sort((a,b)=>b[0].localeCompare(a[0])).map(([day,total])=>{
-              const dr = records.filter(r=>r.date===day);
-              const nailTotal = dr.reduce((s,r)=>s+r.nailPrice,0);
-              const hanpaiTotal = dr.reduce((s,r)=>s+r.hanpaiTotal,0);
-              const repeatRate = dr.length>0?Math.round((dr.filter(r=>r.isRepeat).length/dr.length)*100):0;
-              const shimeiRate = dr.length>0?Math.round((dr.filter(r=>r.shimei).length/dr.length)*100):0;
-              const avg = dr.length>0?Math.round(nailTotal/dr.length):0;
-              const isExp = expandedStaff===day;
-              const visitCounts = calcVisitCounts(dr);
-              return (
-                <div key={day} style={{ background:"white", borderRadius:12, padding:"14px 16px", marginBottom:10, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-                    <div style={{ fontSize:14, fontWeight:700 }}>{day}</div>
-                    <div style={{ fontSize:16, fontWeight:700, color:"#a07850" }}>¥{total.toLocaleString()}</div>
+              const dr=records.filter(r=>r.date===day);
+              const nailTotal=dr.reduce((s,r)=>s+r.nailPrice,0);
+              const hanpaiTotal=dr.reduce((s,r)=>s+r.hanpaiTotal,0);
+              const repeatRate=dr.length>0?Math.round((dr.filter(r=>r.isRepeat).length/dr.length)*100):0;
+              const shimeiRate=dr.length>0?Math.round((dr.filter(r=>r.shimei).length/dr.length)*100):0;
+              const avg=dr.length>0?Math.round(nailTotal/dr.length):0;
+              const isExp=expandedStaff===day;
+              const visitCounts=calcVisitCounts(dr);
+              return(
+                <div key={day} style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:10,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                    <div style={{fontSize:14,fontWeight:700}}>{day}</div>
+                    <div style={{fontSize:16,fontWeight:700,color:"#a07850"}}>¥{total.toLocaleString()}</div>
                   </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
-                    {[
-                      {label:"客数",value:dr.length+"名"},
-                      {label:"客単価",value:"¥"+avg.toLocaleString()},
-                      {label:"リピート率",value:repeatRate+"%"},
-                      {label:"初回",value:visitCounts["初回"]+"名"},
-                      {label:"指名率",value:shimeiRate+"%"},
-                      {label:"店販",value:"¥"+hanpaiTotal.toLocaleString()},
-                    ].map(({label,value})=>(
-                      <div key={label} style={{ background:"#fdf8f4", borderRadius:8, padding:"8px 6px", textAlign:"center" }}>
-                        <div style={{ fontSize:10, color:"#999", marginBottom:2 }}>{label}</div>
-                        <div style={{ fontSize:13, fontWeight:700, color:"#a07850" }}>{value}</div>
-                      </div>
-                    ))}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                    {[{label:"客数",value:dr.length+"名"},{label:"客単価",value:"¥"+avg.toLocaleString()},{label:"リピート率",value:repeatRate+"%"},
+                      {label:"初回",value:visitCounts["初回"]+"名"},{label:"指名率",value:shimeiRate+"%"},{label:"店販",value:"¥"+hanpaiTotal.toLocaleString()}]
+                      .map(({label,value})=>(
+                        <div key={label} style={{background:"#fdf8f4",borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                          <div style={{fontSize:10,color:"#999",marginBottom:2}}>{label}</div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#a07850"}}>{value}</div>
+                        </div>
+                      ))}
                   </div>
                   <button onClick={()=>setExpandedStaff(isExp?null:day)}
-                    style={{ background:"none", border:"none", color:"#a07850", fontSize:12, cursor:"pointer", padding:0, fontWeight:600 }}>
+                    style={{background:"none",border:"none",color:"#a07850",fontSize:12,cursor:"pointer",padding:0,fontWeight:600}}>
                     {isExp?"▲ 詳細を閉じる":"▼ 詳細を見る"}
                   </button>
-                  {isExp && (
-                    <div style={{ marginTop:10 }}>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>来店回数内訳</div>
-                        {VISIT_COUNTS.map(v=>{
-                          const cnt=visitCounts[v]||0;
-                          const pct=dr.length>0?Math.round((cnt/dr.length)*100):0;
-                          return(<div key={v} style={{ marginBottom:8 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
-                              <span style={{ color:"#888" }}>{v}</span>
-                              <span style={{ fontWeight:700, color:"#a07850" }}>{pct}%（{cnt}名）</span>
-                            </div>
-                            <Bar pct={pct} color="#a07850" />
-                          </div>);
-                        })}
+                  {isExp&&(
+                    <div style={{marginTop:10}}>
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>来店回数内訳</div>
+                        {VISIT_COUNTS.map(v=>{const cnt=visitCounts[v]||0;const pct=dr.length>0?Math.round((cnt/dr.length)*100):0;return(<div key={v} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{v}</span><span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span></div><Bar pct={pct} color="#a07850"/></div>);})}
                       </div>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>記録一覧</div>
-                        {dr.map(r=>(
-                          <div key={r.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, paddingBottom:8, borderBottom:"1px solid #ede8e0" }}>
-                            <div>
-                              <div style={{ fontSize:13, fontWeight:600 }}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div>
-                              <div style={{ fontSize:11, color:"#999" }}>{r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"} · {r.payment}</div>
-                            </div>
-                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                              <span style={{ fontSize:13, fontWeight:700, color:"#a07850" }}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
-                              {canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)} />}
-                            </div>
-                          </div>
-                        ))}
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>記録一覧</div>
+                        {dr.map(r=>(<div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,paddingBottom:8,borderBottom:"1px solid #ede8e0"}}><div><div style={{fontSize:13,fontWeight:600}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div><div style={{fontSize:11,color:"#999"}}>{r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"} · {r.payment}</div></div><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>{canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}</div></div>))}
                       </div>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>💳 決済比率</div>
-                        {PAYMENTS.map(p=>{
-                          const cnt=dr.filter(r=>r.payment===p).length;
-                          const pct=dr.length>0?Math.round((cnt/dr.length)*100):0;
-                          return(<div key={p} style={{ marginBottom:8 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
-                              <span style={{ color:"#888" }}>{p}</span>
-                              <span style={{ fontWeight:700, color:"#4a7a6a" }}>{pct}%（{cnt}件）</span>
-                            </div>
-                            <Bar pct={pct} color="#4a7a6a" />
-                          </div>);
-                        })}
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>💳 決済比率</div>
+                        {PAYMENTS.map(p=>{const cnt=dr.filter(r=>r.payment===p).length;const pct=dr.length>0?Math.round((cnt/dr.length)*100):0;return(<div key={p} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{p}</span><span style={{fontWeight:700,color:"#4a7a6a"}}>{pct}%（{cnt}件）</span></div><Bar pct={pct} color="#4a7a6a"/></div>);})}
                       </div>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px" }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>スタッフ別</div>
-                        {STAFF_NAMES.map(s=>{
-                          const sr=dr.filter(r=>r.staff===s);
-                          if(sr.length===0)return null;
-                          const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);
-                          return(<div key={s} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"#888", marginBottom:6 }}>
-                            <span>{s}（{sr.length}名）</span>
-                            <span style={{ fontWeight:600, color:"#a07850" }}>¥{st.toLocaleString()}</span>
-                          </div>);
-                        })}
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>スタッフ別</div>
+                        {STAFF_NAMES.map(s=>{const sr=dr.filter(r=>r.staff===s);if(sr.length===0)return null;const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);return(<div key={s} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#888",marginBottom:6}}><span>{s}（{sr.length}名）</span><span style={{fontWeight:600,color:"#a07850"}}>¥{st.toLocaleString()}</span></div>);})}
                       </div>
                     </div>
                   )}
                 </div>
               );
             })}
-            {Object.keys(stats.byDay).length===0&&<EmptyState />}
+            {Object.keys(stats.byDay).length===0&&<EmptyState/>}
           </div>
         )}
 
         {/* 月別 */}
-        {view==="monthly" && (
+        {view==="monthly"&&(
           <div>
-            <div style={{ border:"1px solid #e8ddd0", borderRadius:10, background:"#fdf8f4", overflow:"hidden", display:"flex", alignItems:"center", marginBottom:16 }}>
+            <div style={{border:"1px solid #e8ddd0",borderRadius:10,background:"#fdf8f4",overflow:"hidden",display:"flex",alignItems:"center",marginBottom:16}}>
               <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}
-                style={{ flex:1, padding:"10px 12px", border:"none", background:"transparent", fontSize:14, outline:"none", minWidth:0 }} />
+                style={{flex:1,padding:"10px 12px",border:"none",background:"transparent",fontSize:14,outline:"none",minWidth:0}}/>
             </div>
-
-            {!isOwner && (()=>{
+            {!isOwner&&(()=>{
               const mr=stats.monthRecords;
               const allMr=stats.allMonthRecords;
               const myNailTotal=mr.reduce((s,r)=>s+r.nailPrice,0);
@@ -666,41 +688,40 @@ function SalonApp() {
               const myAvg=mr.length>0?Math.round(myNailTotal/mr.length):0;
               const allTotal=allMr.reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0);
               const allRepeatRate=allMr.length>0?Math.round((allMr.filter(r=>r.isRepeat).length/allMr.length)*100):0;
+              const visitCounts=calcVisitCounts(mr);
               return(<>
-                <div style={{ fontSize:13, fontWeight:700, color:"#a07850", marginBottom:8 }}>自分の数字</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
-                  {[
-                    {label:"売上",value:"¥"+myTotal.toLocaleString()},
-                    {label:"客数",value:mr.length+"名"},
-                    {label:"客単価",value:"¥"+myAvg.toLocaleString()},
-                    {label:"リピート率",value:myRepeatRate+"%"},
+                <div style={{fontSize:13,fontWeight:700,color:"#a07850",marginBottom:8}}>自分の数字</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+                  {[{label:"売上",value:"¥"+myTotal.toLocaleString()},{label:"客数",value:mr.length+"名"},
+                    {label:"客単価",value:"¥"+myAvg.toLocaleString()},{label:"リピート率",value:myRepeatRate+"%"},
                     {label:"指名率",value:myShimeiRate+"%"},
-                  ].map(({label,value})=><StatCard key={label} label={label} value={value} />)}
+                  ].map(({label,value})=><StatCard key={label} label={label} value={value}/>)}
                 </div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#a07850", marginBottom:8 }}>店全体</div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
-                  {[
-                    {label:"店全体売上",value:"¥"+allTotal.toLocaleString()},
-                    {label:"店全体客数",value:allMr.length+"名"},
-                    {label:"店全体リピート率",value:allRepeatRate+"%"},
-                  ].map(({label,value})=><StatCard key={label} label={label} value={value} />)}
+                {/* 来店回数内訳 */}
+                {mr.length>0&&(
+                  <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                    <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>🔁 来店回数内訳</div>
+                    {VISIT_COUNTS.map(v=>{const cnt=visitCounts[v]||0;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;return(<div key={v} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:"#888"}}>{v}</span><span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span></div><Bar pct={pct} color="#a07850"/></div>);})}
+                  </div>
+                )}
+                <div style={{fontSize:13,fontWeight:700,color:"#a07850",marginBottom:8}}>店全体</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+                  {[{label:"店全体売上",value:"¥"+allTotal.toLocaleString()},{label:"店全体客数",value:allMr.length+"名"},{label:"店全体リピート率",value:allRepeatRate+"%"}]
+                    .map(({label,value})=><StatCard key={label} label={label} value={value}/>)}
                 </div>
                 {mr.map(r=>(
-                  <div key={r.id} style={{ background:"white", borderRadius:12, padding:"12px 16px", marginBottom:8, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                      <div style={{ fontSize:14, fontWeight:600 }}>{(r.nailMenus||[r.nailMenu]).join("・")}</div>
-                      <div style={{ fontSize:14, fontWeight:700, color:"#a07850" }}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</div>
+                  <div key={r.id} style={{background:"white",borderRadius:12,padding:"12px 16px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <div style={{fontSize:14,fontWeight:600}}>{(r.nailMenus||[r.nailMenu]).join("・")}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</div>
                     </div>
-                    <div style={{ fontSize:12, color:"#999" }}>
-                      {r.date} · {r.visitCount||"初回"} · {r.shimei?"👆 指名あり":"指名なし"}
-                    </div>
+                    <div style={{fontSize:12,color:"#999"}}>{r.date} · {r.visitCount||"初回"} · {r.shimei?"👆 指名あり":"指名なし"}</div>
                   </div>
                 ))}
-                {mr.length===0&&<EmptyState />}
+                {mr.length===0&&<EmptyState/>}
               </>);
             })()}
-
-            {isOwner && (()=>{
+            {isOwner&&(()=>{
               const mr=stats.monthRecords;
               const nailTotal=mr.reduce((s,r)=>s+r.nailPrice,0);
               const hanpaiTotal=mr.reduce((s,r)=>s+r.hanpaiTotal,0);
@@ -711,217 +732,122 @@ function SalonApp() {
               const visitCounts=calcVisitCounts(mr);
               const menuCounts=calcMenuCounts(mr);
               return(<>
-                <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+                <div style={{display:"flex",gap:8,marginBottom:16}}>
                   <button onClick={()=>exportCSV(selectedMonth,mr,stats.byStaff,isOwner)}
-                    style={{ flex:1, padding:"12px", background:"#4a7a6a", color:"white", border:"none", borderRadius:12, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    style={{flex:1,padding:"12px",background:"#4a7a6a",color:"white",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
                     📊 CSV出力
                   </button>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-                  {[
-                    {label:"総売上",value:"¥"+total.toLocaleString()},
-                    {label:"客数",value:mr.length+"名"},
-                    {label:"施術売上",value:"¥"+nailTotal.toLocaleString()},
-                    {label:"客単価",value:"¥"+avg.toLocaleString()},
-                    {label:"店販売上",value:"¥"+hanpaiTotal.toLocaleString()},
-                    {label:"リピート率",value:repeatRate+"%"},
-                    {label:"初回",value:visitCounts["初回"]+"名"},
-                    {label:"指名率",value:shimeiRate+"%"},
-                  ].map(({label,value})=><StatCard key={label} label={label} value={value} />)}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  {[{label:"総売上",value:"¥"+total.toLocaleString()},{label:"客数",value:mr.length+"名"},
+                    {label:"施術売上",value:"¥"+nailTotal.toLocaleString()},{label:"客単価",value:"¥"+avg.toLocaleString()},
+                    {label:"店販売上",value:"¥"+hanpaiTotal.toLocaleString()},{label:"リピート率",value:repeatRate+"%"},
+                    {label:"初回",value:visitCounts["初回"]+"名"},{label:"指名率",value:shimeiRate+"%"},
+                  ].map(({label,value})=><StatCard key={label} label={label} value={value}/>)}
                 </div>
-
-                {/* 来店回数内訳 */}
-                <div style={{ background:"white", borderRadius:12, padding:"14px 16px", marginBottom:12, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>🔁 来店回数内訳</div>
-                  {VISIT_COUNTS.map(v=>{
-                    const cnt=visitCounts[v]||0;
-                    const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;
-                    return(<div key={v} style={{ marginBottom:10 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13 }}>
-                        <span style={{ color:"#888" }}>{v}</span>
-                        <span style={{ fontWeight:700, color:"#a07850" }}>{pct}%（{cnt}名）</span>
-                      </div>
-                      <Bar pct={pct} color="#a07850" />
-                    </div>);
-                  })}
+                <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>🔁 来店回数内訳</div>
+                  {VISIT_COUNTS.map(v=>{const cnt=visitCounts[v]||0;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;return(<div key={v} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:"#888"}}>{v}</span><span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span></div><Bar pct={pct} color="#a07850"/></div>);})}
                 </div>
-
-                {/* メニュー割合 */}
-                <div style={{ background:"white", borderRadius:12, padding:"14px 16px", marginBottom:12, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>💅 メニュー別件数</div>
-                  {NAIL_MENUS.map(m=>{
-                    const cnt=menuCounts[m]||0;
-                    const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;
-                    return(<div key={m} style={{ marginBottom:10 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13 }}>
-                        <span style={{ color:"#888" }}>{m}</span>
-                        <span style={{ fontWeight:700, color:"#c87840" }}>{pct}%（{cnt}件）</span>
-                      </div>
-                      <Bar pct={pct} color="#c87840" />
-                    </div>);
-                  })}
+                <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>💅 メニュー別件数</div>
+                  {NAIL_MENUS.map(m=>{const cnt=menuCounts[m]||0;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;return(<div key={m} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:"#888"}}>{m}</span><span style={{fontWeight:700,color:"#c87840"}}>{pct}%（{cnt}件）</span></div><Bar pct={pct} color="#c87840"/></div>);})}
                 </div>
-
-                <div style={{ background:"white", borderRadius:12, padding:"14px 16px", marginBottom:12, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>💳 決済比率</div>
-                  {PAYMENTS.map(p=>{
-                    const cnt=mr.filter(r=>r.payment===p).length;
-                    const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;
-                    return(<div key={p} style={{ marginBottom:10 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", fontSize:13 }}>
-                        <span style={{ color:"#888" }}>{p}</span>
-                        <span style={{ fontWeight:700, color:"#4a7a6a" }}>{pct}%（{cnt}件）</span>
-                      </div>
-                      <Bar pct={pct} color="#4a7a6a" />
-                    </div>);
-                  })}
+                <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>💳 決済比率</div>
+                  {PAYMENTS.map(p=>{const cnt=mr.filter(r=>r.payment===p).length;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;return(<div key={p} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:"#888"}}>{p}</span><span style={{fontWeight:700,color:"#4a7a6a"}}>{pct}%（{cnt}件）</span></div><Bar pct={pct} color="#4a7a6a"/></div>);})}
                 </div>
-                <div style={{ background:"white", borderRadius:12, padding:"14px 16px", marginBottom:16, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>店販内訳</div>
-                  {HANPAI_MENUS.map(m=>{
-                    const t=mr.reduce((s,r)=>s+(r.hanpai[m]||0),0);
-                    return(<div key={m} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"#888", marginBottom:6 }}>
-                      <span>{m}</span><span style={{ fontWeight:600, color:"#c87840" }}>¥{t.toLocaleString()}</span>
-                    </div>);
-                  })}
+                <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:16,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                  <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>店販内訳</div>
+                  {HANPAI_MENUS.map(m=>{const t=mr.reduce((s,r)=>s+(r.hanpai[m]||0),0);return(<div key={m} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#888",marginBottom:6}}><span>{m}</span><span style={{fontWeight:600,color:"#c87840"}}>¥{t.toLocaleString()}</span></div>);})}
                 </div>
                 {mr.map(r=>(
-                  <div key={r.id} style={{ background:"white", borderRadius:12, padding:"12px 16px", marginBottom:8, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                      <div style={{ fontSize:14, fontWeight:600 }}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div>
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <span style={{ fontSize:14, fontWeight:700, color:"#a07850" }}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
-                        <DelBtn onClick={()=>handleDelete(r.id)} />
+                  <div key={r.id} style={{background:"white",borderRadius:12,padding:"12px 16px",marginBottom:8,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <div style={{fontSize:14,fontWeight:600}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <span style={{fontSize:14,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
+                        <DelBtn onClick={()=>handleDelete(r.id)}/>
                       </div>
                     </div>
-                    <div style={{ fontSize:12, color:"#999" }}>
+                    <div style={{fontSize:12,color:"#999"}}>
                       {r.date} · {r.visitCount||"初回"} · {r.shimei?"👆 指名あり":"指名なし"} · {r.payment}
                       {r.hanpaiTotal>0&&" · 店販¥"+r.hanpaiTotal.toLocaleString()}
                     </div>
                   </div>
                 ))}
-                {mr.length===0&&<EmptyState />}
+                {mr.length===0&&<EmptyState/>}
               </>);
             })()}
           </div>
         )}
 
-        {/* 年間 */}
-        {view==="yearly" && isOwner && (
+        {/* 年間（オーナー） */}
+        {view==="yearly"&&isOwner&&(
           <div>
-            <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            <div style={{display:"flex",gap:8,marginBottom:16}}>
               {["2024","2025","2026"].map(y=>(
                 <button key={y} onClick={()=>setSelectedYear(y)}
-                  style={{...cS, background:selectedYear===y?"#a07850":"#f0e8de", color:selectedYear===y?"white":"#a07850"}}>{y}年</button>
+                  style={{...cS,background:selectedYear===y?"#a07850":"#f0e8de",color:selectedYear===y?"white":"#a07850"}}>{y}年</button>
               ))}
             </div>
-            <div style={{ background:"white", borderRadius:16, padding:20, marginBottom:16, boxShadow:"0 2px 12px rgba(0,0,0,0.06)", textAlign:"center" }}>
-              <div style={{ fontSize:12, color:"#999", marginBottom:4 }}>{selectedYear}年 年間売上</div>
-              <div style={{ fontSize:32, fontWeight:700, color:"#a07850" }}>¥{(stats.byYear[selectedYear]||0).toLocaleString()}</div>
-              <div style={{ fontSize:13, color:"#999", marginTop:4 }}>{stats.yearRecords.length}件</div>
+            <div style={{background:"white",borderRadius:16,padding:20,marginBottom:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",textAlign:"center"}}>
+              <div style={{fontSize:12,color:"#999",marginBottom:4}}>{selectedYear}年 年間売上</div>
+              <div style={{fontSize:32,fontWeight:700,color:"#a07850"}}>¥{(stats.byYear[selectedYear]||0).toLocaleString()}</div>
+              <div style={{fontSize:13,color:"#999",marginTop:4}}>{stats.yearRecords.length}件</div>
             </div>
             {Object.entries(stats.byMonth).filter(([m])=>m.startsWith(selectedYear)).sort().map(([month,total])=>(
-              <div key={month} style={{ background:"white", borderRadius:12, padding:"14px 16px", marginBottom:8, display:"flex", justifyContent:"space-between", boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                <div style={{ fontSize:14, fontWeight:600 }}>{month.slice(5)}月</div>
-                <div style={{ fontSize:15, fontWeight:700, color:"#a07850" }}>¥{total.toLocaleString()}</div>
+              <div key={month} style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:8,display:"flex",justifyContent:"space-between",boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                <div style={{fontSize:14,fontWeight:600}}>{month.slice(5)}月</div>
+                <div style={{fontSize:15,fontWeight:700,color:"#a07850"}}>¥{total.toLocaleString()}</div>
               </div>
             ))}
-            {stats.yearRecords.length===0&&<EmptyState />}
+            {stats.yearRecords.length===0&&<EmptyState/>}
           </div>
         )}
 
-        {/* スタッフ別 */}
-        {view==="staff" && isOwner && (
+        {/* スタッフ別（オーナー） */}
+        {view==="staff"&&isOwner&&(
           <div>
-            <div style={{ fontSize:13, color:"#999", marginBottom:12 }}>スタッフ別集計</div>
+            <div style={{fontSize:13,color:"#999",marginBottom:12}}>スタッフ別集計</div>
             {STAFF_NAMES.map(s=>{
               const d=stats.byStaff[s];
               const isExp=expandedStaff===s;
-              if(!d) return(
-                <div key={s} style={{ background:"white", borderRadius:12, padding:16, marginBottom:12, boxShadow:"0 1px 6px rgba(0,0,0,0.05)" }}>
-                  <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>{s}</div>
-                  <div style={{ fontSize:13, color:"#ccc" }}>記録なし</div>
-                </div>
-              );
+              if(!d)return(<div key={s} style={{background:"white",borderRadius:12,padding:16,marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}><div style={{fontSize:15,fontWeight:700,marginBottom:4}}>{s}</div><div style={{fontSize:13,color:"#ccc"}}>記録なし</div></div>);
               const repeatRate=d.count>0?Math.round((d.repeat/d.count)*100):0;
               const shimeiRate=d.count>0?Math.round((d.shimei/d.count)*100):0;
               const avg=d.count>0?Math.round(d.nailTotal/d.count):0;
               return(
-                <div key={s} style={{ background:"white", borderRadius:16, padding:20, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <div style={{ fontSize:16, fontWeight:700, marginBottom:14, color:"#2d2016" }}>{s}</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-                    {[
-                      {label:"売上",value:"¥"+d.total.toLocaleString()},
-                      {label:"客数",value:d.count+"名"},
-                      {label:"施術売上",value:"¥"+d.nailTotal.toLocaleString()},
-                      {label:"客単価",value:"¥"+avg.toLocaleString()},
-                      {label:"店販売上",value:"¥"+d.hanpaiTotal.toLocaleString()},
-                      {label:"リピート率",value:repeatRate+"%"},
-                      {label:"初回",value:(d.visitCounts["初回"]||0)+"名"},
-                      {label:"指名率",value:shimeiRate+"%"},
-                    ].map(({label,value})=>(
-                      <div key={label} style={{ background:"#fdf8f4", borderRadius:12, padding:"12px 14px", textAlign:"center" }}>
-                        <div style={{ fontSize:11, color:"#999", marginBottom:4 }}>{label}</div>
-                        <div style={{ fontSize:16, fontWeight:700, color:"#a07850" }}>{value}</div>
-                      </div>
-                    ))}
+                <div key={s} style={{background:"white",borderRadius:16,padding:20,marginBottom:12,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+                  <div style={{fontSize:16,fontWeight:700,marginBottom:14,color:"#2d2016"}}>{s}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                    {[{label:"売上",value:"¥"+d.total.toLocaleString()},{label:"客数",value:d.count+"名"},
+                      {label:"施術売上",value:"¥"+d.nailTotal.toLocaleString()},{label:"客単価",value:"¥"+avg.toLocaleString()},
+                      {label:"店販売上",value:"¥"+d.hanpaiTotal.toLocaleString()},{label:"リピート率",value:repeatRate+"%"},
+                      {label:"初回",value:(d.visitCounts["初回"]||0)+"名"},{label:"指名率",value:shimeiRate+"%"},
+                    ].map(({label,value})=>(<div key={label} style={{background:"#fdf8f4",borderRadius:12,padding:"12px 14px",textAlign:"center"}}><div style={{fontSize:11,color:"#999",marginBottom:4}}>{label}</div><div style={{fontSize:16,fontWeight:700,color:"#a07850"}}>{value}</div></div>))}
                   </div>
                   <button onClick={()=>setExpandedStaff(isExp?null:s)}
-                    style={{ background:"none", border:"none", color:"#a07850", fontSize:12, cursor:"pointer", padding:"0 0 10px", fontWeight:600 }}>
+                    style={{background:"none",border:"none",color:"#a07850",fontSize:12,cursor:"pointer",padding:"0 0 10px",fontWeight:600}}>
                     {isExp?"▲ 詳細を閉じる":"▼ 詳細を見る"}
                   </button>
-                  {isExp && (
-                    <div style={{ marginTop:8 }}>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>来店回数内訳</div>
-                        {VISIT_COUNTS.map(v=>{
-                          const cnt=d.visitCounts[v]||0;
-                          const pct=d.count>0?Math.round((cnt/d.count)*100):0;
-                          return(<div key={v} style={{ marginBottom:8 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
-                              <span style={{ color:"#888" }}>{v}</span>
-                              <span style={{ fontWeight:700, color:"#a07850" }}>{pct}%（{cnt}名）</span>
-                            </div>
-                            <Bar pct={pct} color="#a07850" />
-                          </div>);
-                        })}
+                  {isExp&&(
+                    <div style={{marginTop:8}}>
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>来店回数内訳</div>
+                        {VISIT_COUNTS.map(v=>{const cnt=d.visitCounts[v]||0;const pct=d.count>0?Math.round((cnt/d.count)*100):0;return(<div key={v} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{v}</span><span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span></div><Bar pct={pct} color="#a07850"/></div>);})}
                       </div>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>💅 メニュー別</div>
-                        {NAIL_MENUS.map(m=>{
-                          const cnt=d.menuCounts[m]||0;
-                          const pct=d.count>0?Math.round((cnt/d.count)*100):0;
-                          return(<div key={m} style={{ marginBottom:8 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
-                              <span style={{ color:"#888" }}>{m}</span>
-                              <span style={{ fontWeight:700, color:"#c87840" }}>{pct}%（{cnt}件）</span>
-                            </div>
-                            <Bar pct={pct} color="#c87840" />
-                          </div>);
-                        })}
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>💅 メニュー別</div>
+                        {NAIL_MENUS.map(m=>{const cnt=d.menuCounts[m]||0;const pct=d.count>0?Math.round((cnt/d.count)*100):0;return(<div key={m} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{m}</span><span style={{fontWeight:700,color:"#c87840"}}>{pct}%（{cnt}件）</span></div><Bar pct={pct} color="#c87840"/></div>);})}
                       </div>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px", marginBottom:8 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>店販内訳</div>
-                        {HANPAI_MENUS.map(m=>(
-                          <div key={m} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:"#888", marginBottom:6 }}>
-                            <span>{m}</span>
-                            <span style={{ fontWeight:600, color:"#c87840" }}>¥{(d.hanpai[m]||0).toLocaleString()}</span>
-                          </div>
-                        ))}
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>店販内訳</div>
+                        {HANPAI_MENUS.map(m=>(<div key={m} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#888",marginBottom:6}}><span>{m}</span><span style={{fontWeight:600,color:"#c87840"}}>¥{(d.hanpai[m]||0).toLocaleString()}</span></div>))}
                       </div>
-                      <div style={{ background:"#fdf8f4", borderRadius:10, padding:"12px 14px" }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:8 }}>💳 決済比率</div>
-                        {PAYMENTS.map(p=>{
-                          const cnt=d.payment[p]||0;
-                          const pct=d.count>0?Math.round((cnt/d.count)*100):0;
-                          return(<div key={p} style={{ marginBottom:8 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", fontSize:12 }}>
-                              <span style={{ color:"#888" }}>{p}</span>
-                              <span style={{ fontWeight:700, color:"#4a7a6a" }}>{pct}%（{cnt}件）</span>
-                            </div>
-                            <Bar pct={pct} color="#4a7a6a" />
-                          </div>);
-                        })}
+                      <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>💳 決済比率</div>
+                        {PAYMENTS.map(p=>{const cnt=d.payment[p]||0;const pct=d.count>0?Math.round((cnt/d.count)*100):0;return(<div key={p} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{p}</span><span style={{fontWeight:700,color:"#4a7a6a"}}>{pct}%（{cnt}件）</span></div><Bar pct={pct} color="#4a7a6a"/></div>);})}
                       </div>
                     </div>
                   )}
@@ -932,19 +858,19 @@ function SalonApp() {
         )}
       </div>
 
-      {deleteTarget && (
-        <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, background:"rgba(0,0,0,0.5)", zIndex:200, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
-          <div style={{ background:"white", borderRadius:16, padding:24, width:"100%", maxWidth:320, textAlign:"center" }}>
-            <div style={{ fontSize:32, marginBottom:12 }}>🗑️</div>
-            <div style={{ fontSize:16, fontWeight:700, marginBottom:8 }}>この記録を削除しますか？</div>
-            <div style={{ fontSize:13, color:"#999", marginBottom:24 }}>削除すると元に戻せません</div>
-            <div style={{ display:"flex", gap:10 }}>
+      {deleteTarget&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div style={{background:"white",borderRadius:16,padding:24,width:"100%",maxWidth:320,textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:12}}>🗑️</div>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>この記録を削除しますか？</div>
+            <div style={{fontSize:13,color:"#999",marginBottom:24}}>削除すると元に戻せません</div>
+            <div style={{display:"flex",gap:10}}>
               <button onClick={()=>setDeleteTarget(null)}
-                style={{ flex:1, padding:12, background:"#f0e8de", border:"none", borderRadius:12, fontSize:14, fontWeight:700, color:"#a07850", cursor:"pointer" }}>
+                style={{flex:1,padding:12,background:"#f0e8de",border:"none",borderRadius:12,fontSize:14,fontWeight:700,color:"#a07850",cursor:"pointer"}}>
                 キャンセル
               </button>
               <button onClick={confirmDelete}
-                style={{ flex:1, padding:12, background:"#e05050", border:"none", borderRadius:12, fontSize:14, fontWeight:700, color:"white", cursor:"pointer" }}>
+                style={{flex:1,padding:12,background:"#e05050",border:"none",borderRadius:12,fontSize:14,fontWeight:700,color:"white",cursor:"pointer"}}>
                 削除する
               </button>
             </div>
@@ -952,8 +878,8 @@ function SalonApp() {
         </div>
       )}
 
-      {toast && (
-        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", background:"#2d2016", color:"white", padding:"10px 24px", borderRadius:24, fontSize:13, fontWeight:600, boxShadow:"0 4px 16px rgba(0,0,0,0.2)", zIndex:100 }}>
+      {toast&&(
+        <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:"#2d2016",color:"white",padding:"10px 24px",borderRadius:24,fontSize:13,fontWeight:600,boxShadow:"0 4px 16px rgba(0,0,0,0.2)",zIndex:100}}>
           {toast}
         </div>
       )}
@@ -961,7 +887,7 @@ function SalonApp() {
   );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const root=ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(SalonApp));
 </script>
 </body>
