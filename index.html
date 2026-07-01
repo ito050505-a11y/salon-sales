@@ -809,17 +809,27 @@ function SalonApp(){
         {/* スタッフ別（オーナー） */}
         {view==="staff"&&isOwner&&(
           <div>
-            <div style={{fontSize:13,color:"#999",marginBottom:12}}>スタッフ別集計</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div style={{fontSize:13,color:"#999",flexShrink:0}}>月を選択：</div>
+              <div style={{border:"1px solid #e8ddd0",borderRadius:10,background:"#fdf8f4",overflow:"hidden",flex:1}}>
+                <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}
+                  style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",fontSize:14,outline:"none"}}/>
+              </div>
+            </div>
             {STAFF_NAMES.map(s=>{
-              const d=stats.byStaff[s];
+              const monthStaffRecords=records.filter(r=>r.staff===s&&r.date.startsWith(selectedMonth));
+              const d=calcStats(monthStaffRecords)[s];
               const isExp=expandedStaff===s;
-              if(!d)return(<div key={s} style={{background:"white",borderRadius:12,padding:16,marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}><div style={{fontSize:15,fontWeight:700,marginBottom:4}}>{s}</div><div style={{fontSize:13,color:"#ccc"}}>記録なし</div></div>);
+              if(!d)return(<div key={s} style={{background:"white",borderRadius:12,padding:16,marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}><div style={{fontSize:15,fontWeight:700,marginBottom:4}}>{s}</div><div style={{fontSize:13,color:"#ccc"}}>{selectedMonth.replace("-","年")}月 の記録なし</div></div>);
               const repeatRate=d.count>0?Math.round((d.repeat/d.count)*100):0;
               const shimeiRate=d.count>0?Math.round((d.shimei/d.count)*100):0;
               const avg=d.count>0?Math.round(d.nailTotal/d.count):0;
               return(
                 <div key={s} style={{background:"white",borderRadius:16,padding:20,marginBottom:12,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-                  <div style={{fontSize:16,fontWeight:700,marginBottom:14,color:"#2d2016"}}>{s}</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",marginBottom:14}}>
+                    <div style={{fontSize:16,fontWeight:700,color:"#2d2016"}}>{s}</div>
+                    <div style={{fontSize:11,color:"#a07850",fontWeight:600}}>{selectedMonth.replace("-","年")}月</div>
+                  </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                     {[{label:"売上",value:"¥"+d.total.toLocaleString()},{label:"客数",value:d.count+"名"},
                       {label:"施術売上",value:"¥"+d.nailTotal.toLocaleString()},{label:"客単価",value:"¥"+avg.toLocaleString()},
