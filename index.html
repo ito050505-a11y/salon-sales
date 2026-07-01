@@ -452,7 +452,7 @@ function SalonApp(){
   const STAFF_NAMES=STAFF_LIST.map(s=>s.name);
   // ★ スタッフに「年間」タブを追加
   const tabs=isOwner
-    ?[{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"}]
+    ?[{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"},{key:"analysis",label:"📊分析"}]
     :[{key:"input",label:"入力"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"}];
 
   return(
@@ -805,6 +805,156 @@ function SalonApp(){
             {stats.yearRecords.length===0&&<EmptyState/>}
           </div>
         )}
+
+        {/* 分析タブ（オーナーのみ） */}
+        {view==="analysis"&&isOwner&&(()=>{
+          const mr=stats.monthRecords;
+          const visitCounts=calcVisitCounts(mr);
+          const menuCounts=calcMenuCounts(mr);
+          const total=mr.length;
+          const repeat=mr.filter(r=>r.isRepeat).length;
+          const repeatRate=total>0?Math.round(repeat/total*100):0;
+          const newCount=total-repeat;
+          const VISIT_COLORS=["#C17C5A","#7FADA0","#8B7EC8","#5E9E8C"];
+
+          // 6ヶ月トレンド
+          const trendMonths=[];
+          for(let i=5;i>=0;i--){
+            let [y,m]=selectedMonth.split("-").map(Number);
+            m-=i; while(m<=0){m+=12;y--;}
+            const key=`${y}-${String(m).padStart(2,"0")}`;
+            const mr2=records.filter(r=>r.date.startsWith(key));
+            const rep=mr2.filter(r=>r.isRepeat).length;
+            const rr=mr2.length>0?Math.round(rep/mr2.length*100):0;
+            trendMonths.push({label:`${m}月`,total:mr2.length,repeat:rep,rr,
+              visits:calcVisitCounts(mr2)});
+          }
+          const maxTotal2=Math.max(1,...trendMonths.map(t=>t.total));
+
+          return(
+            <div>
+              {/* 月選択 */}
+              <div style={{border:"1px solid #e8ddd0",borderRadius:10,background:"#fdf8f4",overflow:"hidden",display:"flex",alignItems:"center",marginBottom:16}}>
+                <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}
+                  style={{flex:1,padding:"10px 12px",border:"none",background:"transparent",fontSize:14,outline:"none",minWidth:0}}/>
+              </div>
+
+              {/* リピート率ヒーロー */}
+              <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",borderRadius:20,padding:20,color:"white",marginBottom:16,boxShadow:"0 4px 20px rgba(160,120,80,0.3)"}}>
+                <div style={{fontSize:11,opacity:0.75,marginBottom:4}}>{selectedMonth.replace("-","年")}月 リピート率</div>
+                <div style={{fontSize:44,fontWeight:700,lineHeight:1,marginBottom:12}}>{repeatRate}<span style={{fontSize:24}}>%</span></div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                  {[{label:"総客数",value:total+"名"},{label:"リピート",value:repeat+"名"},{label:"初回",value:newCount+"名"}]
+                    .map(({label,value})=>(
+                      <div key={label} style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"8px",textAlign:"center"}}>
+                        <div style={{fontSize:10,opacity:0.75,marginBottom:3}}>{label}</div>
+                        <div style={{fontWeight:700,fontSize:15}}>{value}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* 来店回数内訳 */}
+              <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>🔁 来店回数別内訳</div>
+                {VISIT_COUNTS.map((v,i)=>{
+                  const cnt=visitCounts[v]||0;
+                  const pct=total>0?Math.round(cnt/total*100):0;
+                  return(<div key={v} style={{marginBottom:12}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:4}}>
+                      <span style={{color:"#666",fontWeight:600}}>{v}</span>
+                      <span style={{fontWeight:700,color:VISIT_COLORS[i]}}>{pct}%（{cnt}名）</span>
+                    </div>
+                    <div style={{background:"#f0e8de",borderRadius:99,height:10,overflow:"hidden"}}>
+                      <div style={{width:pct+"%",height:"100%",background:VISIT_COLORS[i],borderRadius:99,transition:"width 0.5s"}}/>
+                    </div>
+                  </div>);
+                })}
+              </div>
+
+              {/* 6ヶ月トレンド */}
+              <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📈 6ヶ月 来店回数トレンド</div>
+                <div style={{display:"flex",alignItems:"flex-end",gap:4,height:110,marginBottom:8}}>
+                  {trendMonths.map((t,i)=>{
+                    const isCurrent=i===5;
+                    return(
+                      <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                        <div style={{fontSize:9,fontWeight:700,color:isCurrent?"#a07850":"#bbb",marginBottom:2}}>{t.rr}%</div>
+                        <div style={{width:"100%",display:"flex",flexDirection:"column-reverse",borderRadius:"3px 3px 0 0",overflow:"hidden"}}>
+                          {VISIT_COUNTS.map((v,j)=>{
+                            const cnt=t.visits[v]||0;
+                            const h=t.total>0?Math.round(cnt/maxTotal2*80):0;
+                            return <div key={v} style={{height:h,background:VISIT_COLORS[j],minHeight:cnt>0?2:0}}/>;
+                          })}
+                        </div>
+                        <div style={{fontSize:9,color:isCurrent?"#a07850":"#bbb",fontWeight:isCurrent?700:400}}>{t.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center"}}>
+                  {VISIT_COUNTS.map((v,i)=>(
+                    <div key={v} style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#888"}}>
+                      <div style={{width:8,height:8,borderRadius:2,background:VISIT_COLORS[i]}}/>
+                      {v}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* メニュー割合 */}
+              <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>💅 メニュー別件数</div>
+                {NAIL_MENUS.map((m,i)=>{
+                  const cnt=menuCounts[m]||0;
+                  const pct=total>0?Math.round(cnt/total*100):0;
+                  const color=["#C17C5A","#D4976A","#7FADA0","#8B7EC8"][i];
+                  return(<div key={m} style={{marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:13,marginBottom:3}}>
+                      <span style={{color:"#888"}}>{m}</span>
+                      <span style={{fontWeight:700,color}}>{pct}%（{cnt}件）</span>
+                    </div>
+                    <div style={{background:"#f0e8de",borderRadius:99,height:8,overflow:"hidden"}}>
+                      <div style={{width:pct+"%",height:"100%",background:color,borderRadius:99}}/>
+                    </div>
+                  </div>);
+                })}
+              </div>
+
+              {/* スタッフ別リピート率 */}
+              <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>👩 スタッフ別リピート率</div>
+                {STAFF_NAMES.map((s,i)=>{
+                  const sr=mr.filter(r=>r.staff===s);
+                  if(sr.length===0)return(<div key={s} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#ccc",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #f5f0eb"}}><span>{s}</span><span>記録なし</span></div>);
+                  const srep=sr.filter(r=>r.isRepeat).length;
+                  const srr=Math.round(srep/sr.length*100);
+                  const svc=calcVisitCounts(sr);
+                  const color=["#C17C5A","#7FADA0","#8B7EC8"][i%3];
+                  return(
+                    <div key={s} style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid #f5f0eb"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                        <div style={{fontSize:13,fontWeight:700}}>{s}</div>
+                        <div style={{fontSize:18,fontWeight:700,color}}>{srr}%</div>
+                      </div>
+                      <div style={{background:"#f0e8de",borderRadius:99,height:8,overflow:"hidden",marginBottom:6}}>
+                        <div style={{width:srr+"%",height:"100%",background:color,borderRadius:99}}/>
+                      </div>
+                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                        {VISIT_COUNTS.map((v,j)=>(
+                          <div key={v} style={{fontSize:10,color:"#999",background:"#fdf8f4",borderRadius:99,padding:"2px 8px"}}>
+                            {v}：{svc[v]||0}名
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* スタッフ別（オーナー） */}
         {view==="staff"&&isOwner&&(
