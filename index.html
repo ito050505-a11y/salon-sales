@@ -453,7 +453,7 @@ function SalonApp(){
   // ★ スタッフに「年間」タブを追加
   const tabs=isOwner
     ?[{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"},{key:"analysis",label:"📊分析"}]
-    :[{key:"input",label:"入力"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"}];
+    :[{key:"input",label:"入力"},{key:"today",label:"📅今日"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"}];
 
   return(
     <div style={{fontFamily:"sans-serif",background:"#fdf8f4",minHeight:"100vh",color:"#2d2016",overflowX:"hidden",width:"100%",maxWidth:"100vw",boxSizing:"border-box"}}>
@@ -605,6 +605,85 @@ function SalonApp(){
             })()}
           </div>
         )}
+
+        {/* 今日タブ（スタッフ用） */}
+        {view==="today"&&!isOwner&&(()=>{
+          const todayAll=records.filter(r=>r.date===TODAY).slice().sort((a,b)=>Number(b.id)-Number(a.id));
+          const todayTotal=todayAll.reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0);
+          const todayNail=todayAll.reduce((s,r)=>s+r.nailPrice,0);
+          const todayHanpai=todayAll.reduce((s,r)=>s+r.hanpaiTotal,0);
+          return(
+            <div>
+              {/* 日付表示 */}
+              <div style={{fontSize:13,color:"#999",marginBottom:12,textAlign:"center"}}>{TODAY}</div>
+
+              {/* 店全体合計 */}
+              <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",borderRadius:20,padding:20,color:"white",marginBottom:16,boxShadow:"0 4px 20px rgba(160,120,80,0.3)"}}>
+                <div style={{fontSize:11,opacity:0.75,marginBottom:4}}>🏠 店全体 本日の売上</div>
+                <div style={{fontSize:34,fontWeight:700,marginBottom:12}}>¥{todayTotal.toLocaleString()}</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                  {[
+                    {label:"客数",value:todayAll.length+"名"},
+                    {label:"施術売上",value:"¥"+todayNail.toLocaleString()},
+                    {label:"店販売上",value:"¥"+todayHanpai.toLocaleString()},
+                  ].map(({label,value})=>(
+                    <div key={label} style={{background:"rgba(255,255,255,0.15)",borderRadius:10,padding:"8px",textAlign:"center"}}>
+                      <div style={{fontSize:10,opacity:0.75,marginBottom:3}}>{label}</div>
+                      <div style={{fontWeight:700,fontSize:13}}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* スタッフ別売上 */}
+              <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>👩 スタッフ別売上</div>
+                {STAFF_LIST.map((s,i)=>{
+                  const sr=todayAll.filter(r=>r.staff===s.name);
+                  const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);
+                  const colors=["#C17C5A","#7FADA0","#8B7EC8"];
+                  return(
+                    <div key={s.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid #f5f0eb"}}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700}}>{s.name}</div>
+                        <div style={{fontSize:11,color:"#999",marginTop:2}}>{sr.length}名</div>
+                      </div>
+                      <div style={{fontSize:16,fontWeight:700,color:colors[i%3]}}>
+                        {st>0?("¥"+st.toLocaleString()):"記録なし"}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 全記録一覧 */}
+              <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📋 本日の記録一覧</div>
+                {todayAll.length===0
+                  ?<div style={{textAlign:"center",color:"#ccc",fontSize:13,padding:"20px 0"}}>まだ記録がありません</div>
+                  :todayAll.map(r=>(
+                    <div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,paddingBottom:10,borderBottom:"1px solid #f5f0eb"}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:700}}>{r.staff}</div>
+                        <div style={{fontSize:12,color:"#a07850",fontWeight:600}}>{(r.nailMenus||[r.nailMenu]).join("・")}</div>
+                        <div style={{fontSize:11,color:"#999",marginTop:2}}>{r.visitCount||"初回"} · {r.shimei?"👆 指名あり":"指名なし"} · {r.payment}</div>
+                      </div>
+                      <div style={{fontSize:15,fontWeight:700,color:"#a07850",flexShrink:0,marginLeft:8}}>
+                        ¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}
+                      </div>
+                    </div>
+                  ))
+                }
+                {todayAll.length>0&&(
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"2px solid #e8ddd0",marginTop:4}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#888"}}>合計</div>
+                    <div style={{fontSize:18,fontWeight:700,color:"#a07850"}}>¥{todayTotal.toLocaleString()}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ★ スタッフ用 個人年間タブ */}
         {view==="staff_annual"&&!isOwner&&(
