@@ -858,7 +858,7 @@ function SalonApp(){
                 </div>
                 <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
                   <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>💳 決済比率</div>
-                  {PAYMENTS.map(p=>{const cnt=mr.filter(r=>r.payment===p).length;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;return(<div key={p} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:"#888"}}>{p}</span><span style={{fontWeight:700,color:"#4a7a6a"}}>{pct}%（{cnt}件）</span></div><Bar pct={pct} color="#4a7a6a"/></div>);})}
+                  {PAYMENTS.map(p=>{const cnt=mr.filter(r=>r.payment===p).length;const pct=mr.length>0?Math.round((cnt/mr.length)*100):0;const amt=mr.filter(r=>r.payment===p).reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0);return(<div key={p} style={{marginBottom:10}}><div style={{display:"flex",justifyContent:"space-between",fontSize:13}}><span style={{color:"#888"}}>{p}</span><div style={{textAlign:"right"}}><span style={{fontWeight:700,color:"#4a7a6a"}}>{pct}%（{cnt}件）</span><span style={{fontSize:11,color:"#999",marginLeft:6}}>¥{amt.toLocaleString()}</span></div></div><Bar pct={pct} color="#4a7a6a"/></div>);})}
                 </div>
                 <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:16,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
                   <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>店販内訳</div>
