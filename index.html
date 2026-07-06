@@ -146,7 +146,29 @@ const exportCSV = (selectedMonth, mr, byStaff, isOwner) => {
   URL.revokeObjectURL(url);
 };
 
-const iS={width:"100%",padding:"10px 12px",border:"1px solid #e8ddd0",borderRadius:10,fontSize:14,background:"#fdf8f4",boxSizing:"border-box",outline:"none"};
+const exportDayCSV = (day, dr) => {
+  const nailTotal=dr.reduce((s,r)=>s+r.nailPrice,0);
+  const hanpaiTotal=dr.reduce((s,r)=>s+r.hanpaiTotal,0);
+  const total=nailTotal+hanpaiTotal;
+  const repeatRate=dr.length>0?Math.round((dr.filter(r=>r.isRepeat).length/dr.length)*100):0;
+  const shimeiRate=dr.length>0?Math.round((dr.filter(r=>r.shimei).length/dr.length)*100):0;
+  const avg=dr.length>0?Math.round(nailTotal/dr.length):0;
+  let csv="\uFEFF";
+  csv+=`日別売上レポート,${day}\n\n`;
+  csv+=`【売上サマリー】\n総売上,${total}\n施術売上,${nailTotal}\n店販売上,${hanpaiTotal}\n`;
+  csv+=`客数,${dr.length}\n客単価,${avg}\nリピート率,${repeatRate}%\n指名率,${shimeiRate}%\n\n`;
+  csv+=`【決済方法別】\n決済方法,件数,金額\n`;
+  PAYMENTS.forEach(p=>{const cnt=dr.filter(r=>r.payment===p).length;const amt=dr.filter(r=>r.payment===p).reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0);csv+=`${p},${cnt},${amt}\n`;});
+  csv+=`\n【スタッフ別】\nスタッフ,客数,売上\n`;
+  STAFF_LIST.forEach(s=>{const sr=dr.filter(r=>r.staff===s.name);if(sr.length===0)return;const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);csv+=`${s.name},${sr.length},${st}\n`;});
+  csv+=`\n【明細】\n日付,スタッフ,メニュー,施術売上,店販売上,来店回数,指名,決済方法\n`;
+  dr.forEach(r=>{const menus=(r.nailMenus||[r.nailMenu]).join("・");csv+=`${r.date},${r.staff},${menus},${r.nailPrice},${r.hanpaiTotal},${r.visitCount||"初回"},${r.shimei?"指名あり":"指名なし"},${r.payment}\n`;});
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=`売上レポート_${day}.csv`;a.click();
+  URL.revokeObjectURL(url);
+};
 const cS={padding:"8px 16px",borderRadius:20,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",transition:"all 0.15s"};
 const FR=({label,children})=>(<div style={{marginBottom:14}}><div style={{fontSize:12,color:"#999",marginBottom:6}}>{label}</div>{children}</div>);
 const EmptyState=()=><div style={{textAlign:"center",padding:"40px 0",color:"#ccc",fontSize:14}}>まだデータがありません</div>;
@@ -765,6 +787,10 @@ function SalonApp(){
                         <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>スタッフ別</div>
                         {STAFF_NAMES.map(s=>{const sr=dr.filter(r=>r.staff===s);if(sr.length===0)return null;const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);return(<div key={s} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#888",marginBottom:6}}><span>{s}（{sr.length}名）</span><span style={{fontWeight:600,color:"#a07850"}}>¥{st.toLocaleString()}</span></div>);})}
                       </div>
+                      <button onClick={()=>exportDayCSV(day,dr)}
+                        style={{width:"100%",marginTop:10,padding:"12px",background:"#4a7a6a",color:"white",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                        📥 この日のCSV出力
+                      </button>
                     </div>
                   )}
                 </div>
