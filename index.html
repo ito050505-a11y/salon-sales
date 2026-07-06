@@ -169,6 +169,7 @@ const exportDayCSV = (day, dr) => {
   a.href=url;a.download=`売上レポート_${day}.csv`;a.click();
   URL.revokeObjectURL(url);
 };
+const iS={width:"100%",padding:"10px 12px",border:"1px solid #e8ddd0",borderRadius:10,fontSize:14,background:"#fdf8f4",boxSizing:"border-box",outline:"none"};
 const cS={padding:"8px 16px",borderRadius:20,border:"none",fontSize:13,fontWeight:600,cursor:"pointer",transition:"all 0.15s"};
 const FR=({label,children})=>(<div style={{marginBottom:14}}><div style={{fontSize:12,color:"#999",marginBottom:6}}>{label}</div>{children}</div>);
 const EmptyState=()=><div style={{textAlign:"center",padding:"40px 0",color:"#ccc",fontSize:14}}>まだデータがありません</div>;
