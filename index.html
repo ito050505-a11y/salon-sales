@@ -205,7 +205,7 @@ function LoginScreen({onLogin}){
           </div>
         </FR>
         <FR label="パスワード">
-          <input type="password" placeholder="パスワードを入力" value={password}
+          <input type="password" inputMode="numeric" pattern="[0-9]*" placeholder="パスワードを入力" value={password}
             onChange={e=>{setPassword(e.target.value);setError("");}}
             onKeyDown={e=>e.key==="Enter"&&handleLogin()} style={iS}/>
         </FR>
@@ -219,13 +219,11 @@ function LoginScreen({onLogin}){
   );
 }
 
-// ★ スタッフ用 個人年間ビュー
 function StaffAnnualView({records, currentUser}){
   const [selectedYear, setSelectedYear] = useState(String(new Date().getFullYear()));
   const myRecords = records.filter(r=>r.staff===currentUser.name);
   const years = ["2024","2025","2026"];
 
-  // 月ごとの集計
   const monthlyData = useMemo(()=>{
     const result = {};
     for(let m=1;m<=12;m++){
@@ -255,7 +253,6 @@ function StaffAnnualView({records, currentUser}){
 
   return(
     <div>
-      {/* 年選択 */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         {years.map(y=>(
           <button key={y} onClick={()=>setSelectedYear(y)}
@@ -265,7 +262,6 @@ function StaffAnnualView({records, currentUser}){
         ))}
       </div>
 
-      {/* 年間ヒーロー */}
       <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",borderRadius:20,padding:20,color:"white",marginBottom:16,boxShadow:"0 4px 20px rgba(160,120,80,0.3)"}}>
         <div style={{fontSize:11,opacity:0.75,marginBottom:4}}>{selectedYear}年 個人年間売上</div>
         <div style={{fontSize:32,fontWeight:700,marginBottom:12}}>¥{yearTotal.toLocaleString()}</div>
@@ -286,7 +282,6 @@ function StaffAnnualView({records, currentUser}){
         </div>
       </div>
 
-      {/* 月別バーグラフ */}
       <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
         <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📊 月別売上グラフ</div>
         <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100,marginBottom:8}}>
@@ -305,7 +300,6 @@ function StaffAnnualView({records, currentUser}){
         </div>
       </div>
 
-      {/* 月別リスト */}
       <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
         <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📋 月別詳細</div>
         {Array.from({length:12},(_,i)=>{
@@ -347,7 +341,6 @@ function StaffAnnualView({records, currentUser}){
               </div>
               {isExp&&(
                 <div style={{padding:"0 14px 14px",background:"white"}}>
-                  {/* 来店回数内訳 */}
                   <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px",marginBottom:8}}>
                     <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>🔁 来店回数内訳</div>
                     {VISIT_COUNTS.map(v=>{
@@ -362,7 +355,6 @@ function StaffAnnualView({records, currentUser}){
                       </div>);
                     })}
                   </div>
-                  {/* 記録一覧 */}
                   <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px"}}>
                     <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>記録一覧</div>
                     {d.mr.sort((a,b)=>b.date.localeCompare(a.date)).map(r=>(
@@ -473,7 +465,6 @@ function SalonApp(){
   if(!currentUser)return<LoginScreen onLogin={(user)=>{setCurrentUser(user);setForm({...initialForm,staff:user.role==="staff"?user.name:""});}}/>;
 
   const STAFF_NAMES=STAFF_LIST.map(s=>s.name);
-  // ★ スタッフに「年間」タブを追加
   const tabs=isOwner
     ?[{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"},{key:"analysis",label:"📊分析"}]
     :[{key:"input",label:"入力"},{key:"today",label:"📅今日"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"}];
@@ -509,7 +500,6 @@ function SalonApp(){
 
       <div style={{padding:"16px",maxWidth:480,margin:"0 auto"}}>
 
-        {/* 入力 */}
         {view==="input"&&(
           <div>
             <div style={{background:"white",borderRadius:16,padding:20,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
@@ -629,7 +619,6 @@ function SalonApp(){
           </div>
         )}
 
-        {/* 今日タブ（スタッフ用） */}
         {view==="today"&&!isOwner&&(()=>{
           const todayAll=records.filter(r=>r.date===TODAY).slice().sort((a,b)=>Number(b.id)-Number(a.id));
           const todayTotal=todayAll.reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0);
@@ -637,10 +626,8 @@ function SalonApp(){
           const todayHanpai=todayAll.reduce((s,r)=>s+r.hanpaiTotal,0);
           return(
             <div>
-              {/* 日付表示 */}
               <div style={{fontSize:13,color:"#999",marginBottom:12,textAlign:"center"}}>{TODAY}</div>
 
-              {/* 店全体合計 */}
               <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",borderRadius:20,padding:20,color:"white",marginBottom:16,boxShadow:"0 4px 20px rgba(160,120,80,0.3)"}}>
                 <div style={{fontSize:11,opacity:0.75,marginBottom:4}}>🏠 店全体 本日の売上</div>
                 <div style={{fontSize:34,fontWeight:700,marginBottom:12}}>¥{todayTotal.toLocaleString()}</div>
@@ -658,7 +645,6 @@ function SalonApp(){
                 </div>
               </div>
 
-              {/* スタッフ別売上 */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>👩 スタッフ別売上</div>
                 {STAFF_LIST.map((s,i)=>{
@@ -679,7 +665,6 @@ function SalonApp(){
                 })}
               </div>
 
-              {/* 決済方法別集計 */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>💳 決済方法別集計</div>
                 {PAYMENTS.map(p=>{
@@ -703,7 +688,6 @@ function SalonApp(){
                 </div>
               </div>
 
-              {/* 全記録一覧 */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📋 本日の記録一覧</div>
                 {todayAll.length===0
@@ -732,12 +716,10 @@ function SalonApp(){
           );
         })()}
 
-        {/* ★ スタッフ用 個人年間タブ */}
         {view==="staff_annual"&&!isOwner&&(
           <StaffAnnualView records={records} currentUser={currentUser}/>
         )}
 
-        {/* 日別（オーナーのみ） */}
         {view==="daily"&&isOwner&&(
           <div>
             <div style={{fontSize:13,color:"#999",marginBottom:12}}>日別売上</div>
@@ -801,7 +783,6 @@ function SalonApp(){
           </div>
         )}
 
-        {/* 月別 */}
         {view==="monthly"&&(
           <div>
             <div style={{border:"1px solid #e8ddd0",borderRadius:10,background:"#fdf8f4",overflow:"hidden",display:"flex",alignItems:"center",marginBottom:16}}>
@@ -827,7 +808,6 @@ function SalonApp(){
                     {label:"指名率",value:myShimeiRate+"%"},
                   ].map(({label,value})=><StatCard key={label} label={label} value={value}/>)}
                 </div>
-                {/* 来店回数内訳 */}
                 {mr.length>0&&(
                   <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:12,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
                     <div style={{fontSize:13,fontWeight:700,marginBottom:10}}>🔁 来店回数内訳</div>
@@ -912,7 +892,6 @@ function SalonApp(){
           </div>
         )}
 
-        {/* 年間（オーナー） */}
         {view==="yearly"&&isOwner&&(
           <div>
             <div style={{display:"flex",gap:8,marginBottom:16}}>
@@ -936,7 +915,6 @@ function SalonApp(){
           </div>
         )}
 
-        {/* 分析タブ（オーナーのみ） */}
         {view==="analysis"&&isOwner&&(()=>{
           const mr=stats.monthRecords;
           const visitCounts=calcVisitCounts(mr);
@@ -947,7 +925,6 @@ function SalonApp(){
           const newCount=total-repeat;
           const VISIT_COLORS=["#C17C5A","#7FADA0","#8B7EC8","#5E9E8C"];
 
-          // 6ヶ月トレンド
           const trendMonths=[];
           for(let i=5;i>=0;i--){
             let [y,m]=selectedMonth.split("-").map(Number);
@@ -963,13 +940,11 @@ function SalonApp(){
 
           return(
             <div>
-              {/* 月選択 */}
               <div style={{border:"1px solid #e8ddd0",borderRadius:10,background:"#fdf8f4",overflow:"hidden",display:"flex",alignItems:"center",marginBottom:16}}>
                 <input type="month" value={selectedMonth} onChange={e=>setSelectedMonth(e.target.value)}
                   style={{flex:1,padding:"10px 12px",border:"none",background:"transparent",fontSize:14,outline:"none",minWidth:0}}/>
               </div>
 
-              {/* リピート率ヒーロー */}
               <div style={{background:"linear-gradient(135deg,#c8a882,#a07850)",borderRadius:20,padding:20,color:"white",marginBottom:16,boxShadow:"0 4px 20px rgba(160,120,80,0.3)"}}>
                 <div style={{fontSize:11,opacity:0.75,marginBottom:4}}>{selectedMonth.replace("-","年")}月 リピート率</div>
                 <div style={{fontSize:44,fontWeight:700,lineHeight:1,marginBottom:12}}>{repeatRate}<span style={{fontSize:24}}>%</span></div>
@@ -984,7 +959,6 @@ function SalonApp(){
                 </div>
               </div>
 
-              {/* 来店回数内訳 */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>🔁 来店回数別内訳</div>
                 {VISIT_COUNTS.map((v,i)=>{
@@ -1002,7 +976,6 @@ function SalonApp(){
                 })}
               </div>
 
-              {/* 6ヶ月トレンド */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>📈 6ヶ月 来店回数トレンド</div>
                 <div style={{display:"flex",alignItems:"flex-end",gap:4,height:110,marginBottom:8}}>
@@ -1033,7 +1006,6 @@ function SalonApp(){
                 </div>
               </div>
 
-              {/* メニュー割合 */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>💅 メニュー別件数</div>
                 {NAIL_MENUS.map((m,i)=>{
@@ -1052,7 +1024,6 @@ function SalonApp(){
                 })}
               </div>
 
-              {/* スタッフ別リピート率 */}
               <div style={{background:"white",borderRadius:16,padding:16,boxShadow:"0 2px 12px rgba(0,0,0,0.06)",marginBottom:16}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#888",marginBottom:12}}>👩 スタッフ別リピート率</div>
                 {STAFF_NAMES.map((s,i)=>{
@@ -1086,7 +1057,6 @@ function SalonApp(){
           );
         })()}
 
-        {/* スタッフ別（オーナー） */}
         {view==="staff"&&isOwner&&(
           <div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
