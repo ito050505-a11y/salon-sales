@@ -566,8 +566,8 @@ function SalonApp(){
 
   const STAFF_NAMES=STAFF_LIST.map(s=>s.name);
   const tabs=isOwner
-    ?[{key:"input",label:"入力"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"},{key:"analysis",label:"📊分析"},{key:"register",label:"レジ締め"},{key:"register_history",label:"レジ締め履歴"}]
-    :[{key:"input",label:"入力"},{key:"today",label:"📅今日"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"},{key:"register",label:"レジ締め"}];
+    ?[{key:"input",label:"入力"},{key:"register",label:"レジ締め"},{key:"daily",label:"日別"},{key:"monthly",label:"月別"},{key:"yearly",label:"年間"},{key:"staff",label:"スタッフ"},{key:"analysis",label:"📊分析"},{key:"register_history",label:"レジ締め履歴"}]
+    :[{key:"input",label:"入力"},{key:"register",label:"レジ締め"},{key:"today",label:"📅今日"},{key:"monthly",label:"月別"},{key:"staff_annual",label:"年間"}];
 
   return(
     <div style={{fontFamily:"sans-serif",background:"#fdf8f4",minHeight:"100vh",color:"#2d2016",overflowX:"hidden",width:"100%",maxWidth:"100vw",boxSizing:"border-box"}}>
