@@ -463,7 +463,10 @@ function SalonApp(){
   };
 
   const searchedCustomers=customerSearch
-    ?customers.filter(c=>c.name.includes(customerSearch)||(c.phone||"").includes(customerSearch.replace(/[^0-9]/g,"")))
+    ?customers.filter(c=>{
+      const digits=customerSearch.replace(/[^0-9]/g,"");
+      return c.name.includes(customerSearch)||(digits.length>0&&(c.phone||"").includes(digits));
+    })
     :[];
 
   const registerNewCustomerAndSelect=async()=>{
