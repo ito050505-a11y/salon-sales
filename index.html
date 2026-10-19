@@ -167,6 +167,32 @@ const exportCSV = (selectedMonth, mr, byStaff, isOwner) => {
   URL.revokeObjectURL(url);
 };
 
+const exportRangeDailyCSV = (from, to, records) => {
+  const rs = records.filter(r => r.date >= from && r.date <= to);
+  const days = [...new Set(rs.map(r => r.date))].sort();
+  const sum = (arr, f) => arr.reduce((s, r) => s + f(r), 0);
+  let csv = "\uFEFF";
+  csv += `日別売上一覧,${from}〜${to}\n\n`;
+  csv += `日付,曜日,客数,施術売上,店販売上,売上合計,${PAYMENTS.join(",")}\n`;
+  const W = "日月火水木金土";
+  const tot = { count:0, nail:0, hanpai:0, all:0, pay:PAYMENTS.map(()=>0) };
+  days.forEach(d => {
+    const dr = rs.filter(r => r.date === d);
+    const nail = sum(dr, r => r.nailPrice), hanpai = sum(dr, r => r.hanpaiTotal);
+    const pay = PAYMENTS.map(p => sum(dr.filter(r => r.payment === p), r => r.nailPrice + r.hanpaiTotal));
+    const [y, m, dd] = d.split("-").map(Number);
+    csv += `${d},${W[new Date(y, m - 1, dd).getDay()]},${dr.length},${nail},${hanpai},${nail + hanpai},${pay.join(",")}\n`;
+    tot.count += dr.length; tot.nail += nail; tot.hanpai += hanpai; tot.all += nail + hanpai;
+    pay.forEach((v, i) => tot.pay[i] += v);
+  });
+  csv += `合計,,${tot.count},${tot.nail},${tot.hanpai},${tot.all},${tot.pay.join(",")}\n`;
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `日別売上一覧_${from}_${to}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  return days.length;
+};
 const exportDayCSV = (day, dr, nameOf = () => "") => {
   const nailTotal=dr.reduce((s,r)=>s+r.nailPrice,0);
   const hanpaiTotal=dr.reduce((s,r)=>s+r.hanpaiTotal,0);
@@ -412,6 +438,8 @@ function SalonApp(){
   const [expandedStaff,setExpandedStaff]=useState(null);
   const [deleteTarget,setDeleteTarget]=useState(null);
   const [dateEdit,setDateEdit]=useState(null);
+  const [csvFrom,setCsvFrom]=useState(TODAY.slice(0,4)+"-01-01");
+  const [csvTo,setCsvTo]=useState(TODAY);
   const [customers,setCustomers]=useState([]);
   const customerName=(id)=>{if(!id)return null;const c=customers.find(x=>x.id===id);return c?c.name:null;};
   const [selectedCustomer,setSelectedCustomer]=useState(null);
@@ -991,6 +1019,19 @@ function SalonApp(){
 
         {view==="daily"&&isOwner&&(
           <div>
+            <div style={{background:"white",borderRadius:12,padding:"14px 16px",marginBottom:16,boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#a07850",marginBottom:10}}>📥 期間の日別売上をCSVで出す</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                <input type="date" value={csvFrom} onChange={e=>setCsvFrom(e.target.value)} style={{...iS,flex:1,minWidth:0,padding:"8px 8px",fontSize:13}}/>
+                <span style={{color:"#999",fontSize:13}}>〜</span>
+                <input type="date" value={csvTo} onChange={e=>setCsvTo(e.target.value)} style={{...iS,flex:1,minWidth:0,padding:"8px 8px",fontSize:13}}/>
+              </div>
+              <button onClick={()=>{if(!csvFrom||!csvTo||csvFrom>csvTo){showToast("期間を正しく選んでください");return;}const n=exportRangeDailyCSV(csvFrom,csvTo,records);showToast(n>0?`${n}日分を出力しました`:"この期間の売上はありません");}}
+                style={{width:"100%",padding:"12px",background:"#4a7a6a",color:"white",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                日別売上CSVを出力
+              </button>
+              <div style={{fontSize:11,color:"#999",marginTop:6}}>1日1行で、客数・施術・店販・合計・決済方法別の金額が入ります</div>
+            </div>
             <div style={{fontSize:13,color:"#999",marginBottom:12}}>日別売上</div>
             {Object.entries(stats.byDay).sort((a,b)=>b[0].localeCompare(a[0])).map(([day,total])=>{
               const dr=records.filter(r=>r.date===day);
