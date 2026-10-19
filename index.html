@@ -411,6 +411,7 @@ function SalonApp(){
   const [toast,setToast]=useState("");
   const [expandedStaff,setExpandedStaff]=useState(null);
   const [deleteTarget,setDeleteTarget]=useState(null);
+  const [dateEdit,setDateEdit]=useState(null);
   const [customers,setCustomers]=useState([]);
   const customerName=(id)=>{if(!id)return null;const c=customers.find(x=>x.id===id);return c?c.name:null;};
   const [selectedCustomer,setSelectedCustomer]=useState(null);
@@ -488,6 +489,15 @@ function SalonApp(){
   };
 
   const handleDelete=(id)=>{setDeleteTarget(id);};
+  const saveDateEdit=async()=>{
+    if(!isOwner||!dateEdit)return;
+    if(!dateEdit.date){showToast("日付を選んでください");return;}
+    try{
+      await sb(`records?id=eq.${dateEdit.id}`,{method:"PATCH",body:JSON.stringify({date:dateEdit.date})});
+      setRecords(prev=>prev.map(p=>p.id===dateEdit.id?{...p,date:dateEdit.date}:p).sort((a,b)=>b.date.localeCompare(a.date)));
+      setDateEdit(null);showToast("日付を変更しました");
+    }catch(e){showToast("日付の変更に失敗しました");}
+  };
   const confirmDelete=async()=>{
     try{
       await sb(`records?id=eq.${deleteTarget}`,{method:"DELETE"});
@@ -858,6 +868,7 @@ function SalonApp(){
                         </div>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{fontSize:15,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>
+                          {isOwner&&<button onClick={()=>setDateEdit({id:r.id,date:r.date,orig:r.date,name:customerName(r.customerId)})} style={{background:"#f0e8de",border:"none",borderRadius:8,padding:"4px 8px",fontSize:11,color:"#a07850",cursor:"pointer",fontWeight:600}}>📅 日付</button>}
                           {canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}
                         </div>
                       </div>
@@ -1014,7 +1025,7 @@ function SalonApp(){
                     <div style={{marginTop:10}}>
                       <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>👤 来店されたお客様（{dr.length}名）</div>
-                        {dr.map(r=>{const nm=customerName(r.customerId);return(<div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:8,paddingBottom:8,borderBottom:"1px solid #ede8e0"}}><div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:nm?"#333":"#bbb"}}>{nm?nm+" 様":"お客様未登録"}</div><div style={{fontSize:12,color:"#666",marginTop:2}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div><div style={{fontSize:11,color:"#999"}}>{r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"} · {r.payment}{r.bookingSource&&r.bookingSource!=="未回答"?" · "+r.bookingSource:""}</div></div><div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><span style={{fontSize:13,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>{canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}</div></div>);})}
+                        {dr.map(r=>{const nm=customerName(r.customerId);return(<div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:8,paddingBottom:8,borderBottom:"1px solid #ede8e0"}}><div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:nm?"#333":"#bbb"}}>{nm?nm+" 様":"お客様未登録"}</div><div style={{fontSize:12,color:"#666",marginTop:2}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div><div style={{fontSize:11,color:"#999"}}>{r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"} · {r.payment}{r.bookingSource&&r.bookingSource!=="未回答"?" · "+r.bookingSource:""}</div></div><div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><span style={{fontSize:13,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>{isOwner&&<button onClick={()=>setDateEdit({id:r.id,date:r.date,orig:r.date,name:customerName(r.customerId)})} style={{background:"#f0e8de",border:"none",borderRadius:8,padding:"4px 8px",fontSize:11,color:"#a07850",cursor:"pointer",fontWeight:600}}>📅 日付</button>}{canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}</div></div>);})}
                       </div>
                       <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>来店回数内訳</div>
@@ -1658,6 +1669,28 @@ function SalonApp(){
           );
         })()}
       </div>
+
+      {dateEdit&&isOwner&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div style={{background:"white",borderRadius:16,padding:24,width:"100%",maxWidth:320,textAlign:"center"}}>
+            <div style={{fontSize:32,marginBottom:12}}>📅</div>
+            <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>日付を変更</div>
+            <div style={{fontSize:13,color:"#999",marginBottom:16}}>{dateEdit.name?dateEdit.name+" 様":"お客様未登録"}・今の日付 {dateEdit.orig}</div>
+            <input type="date" value={dateEdit.date} onChange={e=>setDateEdit({...dateEdit,date:e.target.value})}
+              style={{width:"100%",padding:"10px 12px",border:"1px solid #e8ddd0",borderRadius:10,fontSize:15,background:"#fdf8f4",boxSizing:"border-box",marginBottom:20}}/>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setDateEdit(null)}
+                style={{flex:1,padding:12,background:"#f0e8de",border:"none",borderRadius:12,fontSize:14,fontWeight:700,color:"#a07850",cursor:"pointer"}}>
+                キャンセル
+              </button>
+              <button onClick={saveDateEdit}
+                style={{flex:1,padding:12,background:"#a07850",border:"none",borderRadius:12,fontSize:14,fontWeight:700,color:"white",cursor:"pointer"}}>
+                変更する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteTarget&&(
         <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
