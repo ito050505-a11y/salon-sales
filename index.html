@@ -167,7 +167,7 @@ const exportCSV = (selectedMonth, mr, byStaff, isOwner) => {
   URL.revokeObjectURL(url);
 };
 
-const exportDayCSV = (day, dr) => {
+const exportDayCSV = (day, dr, nameOf = () => "") => {
   const nailTotal=dr.reduce((s,r)=>s+r.nailPrice,0);
   const hanpaiTotal=dr.reduce((s,r)=>s+r.hanpaiTotal,0);
   const total=nailTotal+hanpaiTotal;
@@ -182,8 +182,8 @@ const exportDayCSV = (day, dr) => {
   PAYMENTS.forEach(p=>{const cnt=dr.filter(r=>r.payment===p).length;const amt=dr.filter(r=>r.payment===p).reduce((s,r)=>s+r.nailPrice+r.hanpaiTotal,0);csv+=`${p},${cnt},${amt}\n`;});
   csv+=`\n【スタッフ別】\nスタッフ,客数,売上\n`;
   STAFF_LIST.forEach(s=>{const sr=dr.filter(r=>r.staff===s.name);if(sr.length===0)return;const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);csv+=`${s.name},${sr.length},${st}\n`;});
-  csv+=`\n【明細】\n日付,スタッフ,メニュー,施術売上,店販売上,来店回数,指名,決済方法\n`;
-  dr.forEach(r=>{const menus=(r.nailMenus||[r.nailMenu]).join("・");csv+=`${r.date},${r.staff},${menus},${r.nailPrice},${r.hanpaiTotal},${r.visitCount||"初回"},${r.shimei?"指名あり":"指名なし"},${r.payment}\n`;});
+  csv+=`\n【明細】\n日付,お客様,スタッフ,メニュー,施術売上,店販売上,来店回数,指名,決済方法\n`;
+  dr.forEach(r=>{const menus=(r.nailMenus||[r.nailMenu]).join("・");csv+=`${r.date},${(nameOf(r.customerId)||"未登録").replace(/,/g," ")},${r.staff},${menus},${r.nailPrice},${r.hanpaiTotal},${r.visitCount||"初回"},${r.shimei?"指名あり":"指名なし"},${r.payment}\n`;});
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -412,6 +412,7 @@ function SalonApp(){
   const [expandedStaff,setExpandedStaff]=useState(null);
   const [deleteTarget,setDeleteTarget]=useState(null);
   const [customers,setCustomers]=useState([]);
+  const customerName=(id)=>{if(!id)return null;const c=customers.find(x=>x.id===id);return c?c.name:null;};
   const [selectedCustomer,setSelectedCustomer]=useState(null);
   const [visitOverride,setVisitOverride]=useState(null);
   const [customerSearch,setCustomerSearch]=useState("");
@@ -1008,12 +1009,12 @@ function SalonApp(){
                   {isExp&&(
                     <div style={{marginTop:10}}>
                       <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
-                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>来店回数内訳</div>
-                        {VISIT_COUNTS.map(v=>{const cnt=visitCounts[v]||0;const pct=dr.length>0?Math.round((cnt/dr.length)*100):0;return(<div key={v} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{v}</span><span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span></div><Bar pct={pct} color="#a07850"/></div>);})}
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>👤 来店されたお客様（{dr.length}名）</div>
+                        {dr.map(r=>{const nm=customerName(r.customerId);return(<div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginBottom:8,paddingBottom:8,borderBottom:"1px solid #ede8e0"}}><div style={{minWidth:0}}><div style={{fontSize:14,fontWeight:700,color:nm?"#333":"#bbb"}}>{nm?nm+" 様":"お客様未登録"}</div><div style={{fontSize:12,color:"#666",marginTop:2}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div><div style={{fontSize:11,color:"#999"}}>{r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"} · {r.payment}{r.bookingSource&&r.bookingSource!=="未回答"?" · "+r.bookingSource:""}</div></div><div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><span style={{fontSize:13,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>{canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}</div></div>);})}
                       </div>
                       <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
-                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>記録一覧</div>
-                        {dr.map(r=>(<div key={r.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,paddingBottom:8,borderBottom:"1px solid #ede8e0"}}><div><div style={{fontSize:13,fontWeight:600}}>{r.staff} · {(r.nailMenus||[r.nailMenu]).join("・")}</div><div style={{fontSize:11,color:"#999"}}>{r.visitCount||"初回"} · {r.shimei?"👆 指名":"指名なし"} · {r.payment}</div></div><div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:13,fontWeight:700,color:"#a07850"}}>¥{(r.nailPrice+r.hanpaiTotal).toLocaleString()}</span>{canEdit(r)&&<DelBtn onClick={()=>handleDelete(r.id)}/>}</div></div>))}
+                        <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>来店回数内訳</div>
+                        {VISIT_COUNTS.map(v=>{const cnt=visitCounts[v]||0;const pct=dr.length>0?Math.round((cnt/dr.length)*100):0;return(<div key={v} style={{marginBottom:8}}><div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:"#888"}}>{v}</span><span style={{fontWeight:700,color:"#a07850"}}>{pct}%（{cnt}名）</span></div><Bar pct={pct} color="#a07850"/></div>);})}
                       </div>
                       <div style={{background:"#fdf8f4",borderRadius:10,padding:"12px 14px",marginBottom:8}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>💳 決済比率</div>
@@ -1023,7 +1024,7 @@ function SalonApp(){
                         <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:8}}>スタッフ別</div>
                         {STAFF_NAMES.map(s=>{const sr=dr.filter(r=>r.staff===s);if(sr.length===0)return null;const st=sr.reduce((sum,r)=>sum+r.nailPrice+r.hanpaiTotal,0);return(<div key={s} style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#888",marginBottom:6}}><span>{s}（{sr.length}名）</span><span style={{fontWeight:600,color:"#a07850"}}>¥{st.toLocaleString()}</span></div>);})}
                       </div>
-                      <button onClick={()=>exportDayCSV(day,dr)}
+                      <button onClick={()=>exportDayCSV(day,dr,customerName)}
                         style={{width:"100%",marginTop:10,padding:"12px",background:"#4a7a6a",color:"white",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer"}}>
                         📥 この日のCSV出力
                       </button>
